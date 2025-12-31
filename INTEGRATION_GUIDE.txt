@@ -1,0 +1,91 @@
+===========================================
+MANUAL INTEGRATION GUIDE
+===========================================
+
+You need to add two methods to app.js and call one of them.
+
+STEP 1: Add these two methods after the handleLinkMember() method (around line 229)
+Copy and paste this code:
+
+```javascript
+    setupCheckinInterface() {
+        // Check if user is admin or regular member
+        const isAdmin = window.firebaseIntegration && window.firebaseIntegration.isAdmin();
+        const currentMember = window.firebaseIntegration && window.firebaseIntegration.getCurrentMember();
+        
+        if (isAdmin) {
+            // Show admin dropdown interface
+            this.personalizedCheckinEl.style.display = 'none';
+            this.adminCheckinEl.style.display = 'block';
+            // Keep admin button visible
+            if (this.adminToggleEl) {
+                this.adminToggleEl.style.display = 'block';
+            }
+        } else if (currentMember) {
+            // Show personalized interface for regular members
+            this.personalizedCheckinEl.style.display = 'block';
+            this.adminCheckinEl.style.display = 'none';
+            
+            // Hide admin button
+            if (this.adminToggleEl) {
+                this.adminToggleEl.style.display = 'none';
+            }
+            
+            // Set personalized text
+            this.memberGreetingEl.textContent = `Good day, ${currentMember.name}! 🏔️`;
+            this.memberHabitEl.textContent = currentMember.habit;
+            
+            // Check if already checked in today
+            const alreadyCheckedIn = this.isMemberCheckedInToday(currentMember.id);
+            
+            if (alreadyCheckedIn) {
+                this.quickCheckinBtnEl.disabled = true;
+                this.quickCheckinBtnEl.innerHTML = '<span class="btn-icon">✅</span><span class="btn-text">Already done today!</span>';
+                this.quickCheckinStatusEl.textContent = '🎉 Great job! See you tomorrow!';
+                this.quickCheckinStatusEl.className = 'checkin-status success';
+            } else {
+                this.quickCheckinBtnEl.disabled = false;
+                this.quickCheckinBtnEl.innerHTML = '<span class="btn-icon">✅</span><span class="btn-text">Yes, I did it!</span>';
+                this.quickCheckinStatusEl.textContent = '';
+            }
+        }
+    }
+    
+    async handleQuickCheckin() {
+        const currentMember = window.firebaseIntegration && window.firebaseIntegration.getCurrentMember();
+        
+        if (!currentMember) {
+            this.quickCheckinStatusEl.textContent = '❌ Error: Could not identify your account';
+            this.quickCheckinStatusEl.className = 'checkin-status error';
+            return;
+        }
+        
+        // Use the same logic as handleCheckin but with the current member's ID
+        this.userSelectEl.value = currentMember.id;
+        await this.handleCheckin();
+        
+        // Update the quick checkin UI
+        this.setupCheckinInterface();
+    }
+```
+
+STEP 2: Find the renderUI() method (around line 270) and add this line at the END of that method:
+
+```javascript
+    renderUI() {
+        this.renderHeader();
+        this.renderProgressOverview();
+        this.renderTeamProgressOverview();
+        this.renderRopedTeam();
+        this.renderMilestones();
+        this.renderUserSelect();
+        this.renderAdminPanel();
+        this.setupCheckinInterface(); // ADD THIS LINE
+    }
+```
+
+STEP 3: Deploy and test!
+
+Run: firebase deploy
+
+Then test with both your account (admin) and Sheetal's account (regular member).

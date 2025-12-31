@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>The Roped Team - Mountain Habit Tracker</title>
+    <meta name="description"
+        content="A collaborative habit tracking app where 8 climbers work together to reach the summit. One team, one goal, 90 days to the top.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Background Mountain Scene -->
+    <div class="mountain-backdrop"></div>
+    <div class="stars"></div>
+
+    <!-- Main Container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon">🏔️</div>
+                    <div class="logo-text">
+                        <h1>The Roped Team</h1>
+                        <p class="tagline">Together to the Summit</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="user-info" id="userInfo" style="display: none;">
+                        <span class="user-name" id="userName">Loading...</span>
+                        <button class="logout-btn" id="logoutBtn">Logout</button>
+                    </div>
+                    <div class="summit-prize">
+                        <span class="prize-label">Summit Prize</span>
+                        <span class="prize-value" id="summitPrize">Team Celebration Dinner</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Progress Overview Card -->
+            <section class="progress-overview">
+                <div class="overview-header">
+                    <h2>Expedition Progress</h2>
+                    <div class="day-counter">
+                        <span class="current-day" id="currentDay">1</span>
+                        <span class="total-days">/ 90 Days</span>
+                    </div>
+                </div>
+
+                <div class="altitude-meter">
+                    <div class="altitude-labels">
+                        <span class="summit-label">🏔️ Summit</span>
+                        <span class="altitude-value" id="altitudeValue">0%</span>
+                        <span class="basecamp-label">⛺ Base</span>
+                    </div>
+                    <div class="altitude-track">
+                        <div class="altitude-progress" id="altitudeProgress"></div>
+                        <div class="team-marker" id="teamMarker">
+                            <div class="marker-icon">🧗</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">⛺</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="baseCampsCount">0</div>
+                            <div class="stat-label">Base Camps</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="teamStreak">0</div>
+                            <div class="stat-label">Team Streak</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="todayCheckins">0/8</div>
+                            <div class="stat-label">Today's Anchors</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- User Check-in Panel (Prominently placed at top) -->
+            <section class="checkin-panel">
+                <div class="checkin-card">
+                    <!-- Personalized Check-in (for regular members) -->
+                    <div id="personalizedCheckin" class="personalized-checkin" style="display: none;">
+                        <h3 id="memberGreeting">Good day, Climber!</h3>
+                        <p class="habit-question">Have you completed <strong id="memberHabit">your habit</strong> today?
+                        </p>
+                        <button id="quickCheckinBtn" class="quick-checkin-btn">
+                            <span class="btn-icon">✅</span>
+                            <span class="btn-text">Yes, I did it!</span>
+                        </button>
+                        <p class="checkin-status" id="quickCheckinStatus"></p>
+                    </div>
+
+                    <!-- Admin Dropdown (only for admin) -->
+                    <div id="adminCheckin" class="admin-checkin" style="display: none;">
+                        <h3>Admin Check-in</h3>
+                        <div class="user-selector">
+                            <label for="userSelect">Select Climber:</label>
+                            <select id="userSelect" class="user-select">
+                                <option value="">Choose climber...</option>
+                            </select>
+                        </div>
+                        <button id="checkinBtn" class="checkin-btn" disabled>
+                            <span class="btn-icon">⚓</span>
+                            <span class="btn-text">Anchor Secured</span>
+                        </button>
+                        <p class="checkin-status" id="checkinStatus"></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Team Progress Overview - All Members 30-Day History -->
+            <section class="team-progress-overview">
+                <h2 class="section-title">Team Progress Overview - Last 30 Days</h2>
+                <p class="section-subtitle">Track everyone's journey at a glance</p>
+
+                <div class="team-progress-grid" id="teamProgressGrid">
+                    <!-- Team member progress cards will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- The Roped Team Visualization -->
+            <section class="roped-team-section">
+                <h2 class="section-title">The Roped Team</h2>
+                <div class="rope-container" id="ropeContainer">
+                    <!-- Climbers will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Weekly Milestones -->
+            <section class="milestones-section">
+                <h2 class="section-title">Base Camps Established</h2>
+                <div class="milestones-grid" id="milestonesGrid">
+                    <!-- Milestone markers will be dynamically inserted -->
+                </div>
+            </section>
+
+
+            <!-- Individual Member Progress (Shows when user is selected) -->
+            <section class="personal-progress-section hidden" id="personalProgressSection">
+                <h2 class="section-title">
+                    <span id="personalProgressName">Your</span> Personal Journey
+                </h2>
+
+                <div class="personal-stats-grid">
+                    <div class="personal-stat-card">
+                        <div class="personal-stat-icon">📊</div>
+                        <div class="personal-stat-content">
+                            <div class="personal-stat-value" id="personalTotalCheckins">0</div>
+                            <div class="personal-stat-label">Total Check-ins</div>
+                        </div>
+                    </div>
+                    <div class="personal-stat-card">
+                        <div class="personal-stat-icon">🔥</div>
+                        <div class="personal-stat-content">
+                            <div class="personal-stat-value" id="personalCurrentStreak">0</div>
+                            <div class="personal-stat-label">Current Streak</div>
+                        </div>
+                    </div>
+                    <div class="personal-stat-card">
+                        <div class="personal-stat-icon">🏆</div>
+                        <div class="personal-stat-content">
+                            <div class="personal-stat-value" id="personalBestStreak">0</div>
+                            <div class="personal-stat-label">Best Streak</div>
+                        </div>
+                    </div>
+                    <div class="personal-stat-card">
+                        <div class="personal-stat-icon">📈</div>
+                        <div class="personal-stat-content">
+                            <div class="personal-stat-value" id="personalCompletionRate">0%</div>
+                            <div class="personal-stat-label">Completion Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="personal-calendar">
+                    <h3>Your Check-in History (Last 30 Days)</h3>
+                    <div class="calendar-grid" id="personalCalendar">
+                        <!-- Calendar will be dynamically generated -->
+                    </div>
+                    <div class="calendar-legend">
+                        <span class="legend-item"><span class="legend-box checked"></span> Checked In</span>
+                        <span class="legend-item"><span class="legend-box missed"></span> Missed</span>
+                        <span class="legend-item"><span class="legend-box future"></span> Future</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Admin Panel (Hidden by default) -->
+        <aside class="admin-panel" id="adminPanel">
+            <button class="admin-toggle" id="adminToggle" style="display: none;">⚙️ Admin</button>
+            <div class="admin-content" id="adminContent">
+                <h3>Admin Settings</h3>
+
+                <div class="admin-section">
+                    <label for="groupName">Group Name:</label>
+                    <input type="text" id="groupName" placeholder="K2 Conquerors" value="K2 Conquerors">
+                </div>
+
+                <div class="admin-section">
+                    <label for="prizeName">Summit Prize:</label>
+                    <input type="text" id="prizeName" placeholder="Team Celebration Dinner"
+                        value="Team Celebration Dinner">
+                </div>
+
+                <div class="admin-section">
+                    <label>Team Members (8):</label>
+                    <div class="members-list" id="membersList">
+                        <!-- Member inputs will be here -->
+                    </div>
+                </div>
+
+                <div class="admin-section"
+                    style="border-top: 2px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1rem;">
+                    <label>🔗 Link Member to Team:</label>
+                    <p style="font-size: 0.875rem; color: #B8E6F5; margin-bottom: 0.5rem;">
+                        If a member created their own team by mistake, enter their email here to move them to this team.
+                    </p>
+                    <input type="email" id="linkMemberEmail" placeholder="member@email.com"
+                        style="margin-bottom: 0.5rem;">
+                    <button id="linkMemberBtn" class="admin-save-btn"
+                        style="background: linear-gradient(135deg, #4A90E2, #357ABD);">
+                        Link Member
+                    </button>
+                    <div id="linkStatus" style="margin-top: 0.5rem; font-size: 0.875rem;"></div>
+                </div>
+
+                <button id="saveSettings" class="admin-save-btn">Save Settings</button>
+                <button id="resetProgress" class="admin-reset-btn">Reset Progress</button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Celebration Modal -->
+    <div class="modal" id="celebrationModal">
+        <div class="modal-content celebration-content">
+            <div class="celebration-animation">🎉</div>
+            <h2 id="celebrationTitle">Base Camp Established!</h2>
+            <p id="celebrationMessage">The team completed a perfect week!</p>
+            <button class="modal-close-btn" id="closeCelebration">Continue Climbing</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Firebase Config -->
+    <script src="firebase-config.js"></script>
+
+    <!-- Firebase Integration -->
+    <script src="firebase-integration.js"></script>
+
+    <!-- Original App -->
+    <script src="app.js"></script>
+</body>
+
+</html>
