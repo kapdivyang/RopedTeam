@@ -21,6 +21,7 @@ class HabitTrackerApp {
                 { id: 8, name: 'Nina', habit: 'Coding Practice', emoji: '🧗‍♀️' }
             ],
             checkins: {}, // { day: { memberId: true/false } }
+            checkinDetails: {}, // { day: [{ memberId, memberName, timestamp }] } - for first anchor tracking
             baseCamps: [], // Array of week numbers that achieved perfect completion
             weeklyProgress: {} // { week: { memberId: [days completed] } }
         };
@@ -108,6 +109,10 @@ class HabitTrackerApp {
         this.memberHabitEl = document.getElementById('memberHabit');
         this.quickCheckinBtnEl = document.getElementById('quickCheckinBtn');
         this.quickCheckinStatusEl = document.getElementById('quickCheckinStatus');
+
+        // First Anchor Elements
+        this.firstAnchorBadgeEl = document.getElementById('firstAnchorBadge');
+        this.firstAnchorsListEl = document.getElementById('firstAnchorsList');
     }
 
     attachEventListeners() {
@@ -331,10 +336,12 @@ class HabitTrackerApp {
     // ========================================
     renderUI() {
         this.renderHeader();
+        this.renderFirstAnchorBadge(); // NEW: Render first anchor badge
         this.renderProgressOverview();
         this.renderTeamProgressOverview();
         this.renderRopedTeam();
         this.renderMilestones();
+        this.renderFirstAnchorsHistory(); // NEW: Render 30-day history
         this.renderUserSelect();
         this.renderAdminPanel();
         this.setupCheckinInterface(); // ADD THIS LINE
@@ -892,6 +899,118 @@ class HabitTrackerApp {
         this.renderUI();
 
         alert('🔄 Progress has been reset. Start your new expedition!');
+    }
+
+    // ========================================
+    // FIRST ANCHOR RENDERING
+    // ========================================
+    renderFirstAnchorBadge() {
+        if (!this.firstAnchorBadgeEl) return;
+
+        const firebaseIntegration = window.firebaseIntegration;
+        if (!firebaseIntegration) {
+            this.firstAnchorBadgeEl.style.display = 'none';
+            return;
+        }
+
+        const firstAnchor = firebaseIntegration.getFirstAnchorOfDay(this.state.currentDay);
+
+        if (!firstAnchor) {
+            this.firstAnchorBadgeEl.style.display = 'none';
+            return;
+        }
+
+        // Check if current user is the first anchor
+        const currentMember = firebaseIntegration.getCurrentMember();
+        const isCurrentUser = currentMember && currentMember.id === firstAnchor.memberId;
+
+        this.firstAnchorBadgeEl.style.display = 'block';
+        this.firstAnchorBadgeEl.className = `first-anchor-badge ${isCurrentUser ? 'is-me' : ''}`;
+
+        this.firstAnchorBadgeEl.innerHTML = `
+            <div class="badge-icon">⚓🏆</div>
+            <div class="badge-content">
+                <div class="badge-title">First Anchor of the Day!</div>
+                <div class="badge-name">${firstAnchor.memberName}</div>
+                <div class="badge-subtitle">${isCurrentUser ? 'That\'s you! Amazing dedication! 🎉' : 'Beat you to it today! 💪'}</div>
+            </div>
+            <div class="badge-decoration">
+                <div class="sparkle">✨</div>
+                <div class="sparkle">✨</div>
+                <div class="sparkle">✨</div>
+            </div>
+        `;
+    }
+
+    renderFirstAnchorsHistory() {
+        if (!this.firstAnchorsListEl) return;
+
+        const firebaseIntegration = window.firebaseIntegration;
+        if (!firebaseIntegration) {
+            this.firstAnchorsListEl.innerHTML = '<p class="no-data">Connect to Firebase to see first anchor history</p>';
+            return;
+        }
+
+        const firstAnchors = firebaseIntegration.getLast30DaysFirstAnchors();
+
+        if (firstAnchors.length === 0) {
+            this.firstAnchorsListEl.innerHTML = '<p class="no-data">No check-ins yet. Be the first anchor today!</p>';
+            return;
+        }
+
+        // Count first anchors by member
+        const anchorCounts = {};
+        firstAnchors.forEach(anchor => {
+            anchorCounts[anchor.memberName] = (anchorCounts[anchor.memberName] || 0) + 1;
+        });
+
+        // Get current user
+        const currentMember = firebaseIntegration.getCurrentMember();
+
+        let html = '<div class="first-anchors-summary">';
+        html += '<h3>🏆 Leaderboard</h3>';
+        html += '<div class="leaderboard">';
+
+        // Sort by count
+        const sortedAnchors = Object.entries(anchorCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5); // Top 5
+
+        sortedAnchors.forEach(([name, count], index) => {
+            const isCurrentUser = currentMember && currentMember.name === name;
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⚓';
+            html += `
+                <div class="leaderboard-item ${isCurrentUser ? 'is-me' : ''}">
+                    <span class="leaderboard-medal">${medal}</span>
+                    <span class="leaderboard-name">${name}</span>
+                    <span class="leaderboard-count">${count} days</span>
+                </div>
+            `;
+        });
+
+        html += '</div></div>';
+
+        html += '<div class="first-anchors-timeline">';
+        html += '<h3>📅 Recent History</h3>';
+        html += '<div class="timeline-list">';
+
+        // Show last 10 days
+        firstAnchors.slice(0, 10).forEach(anchor => {
+            const isCurrentUser = currentMember && currentMember.id === anchor.memberId;
+            const isToday = anchor.day === this.state.currentDay;
+
+            html += `
+                <div class="timeline-item ${isCurrentUser ? 'is-me' : ''} ${isToday ? 'is-today' : ''}">
+                    <div class="timeline-day">Day ${anchor.day}</div>
+                    <div class="timeline-name">⚓ ${anchor.memberName}</div>
+                    ${isToday ? '<div class="timeline-badge">Today</div>' : ''}
+                </div>
+            `;
+        });
+
+        html += '</div></div>';
+
+        this.firstAnchorsListEl.innerHTML = html;
     }
 }
 

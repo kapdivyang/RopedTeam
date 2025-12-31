@@ -142,6 +142,7 @@ class FirebaseIntegration {
 
         const app = window.ropedTeamApp;
         app.state.checkins = {};
+        app.state.checkinDetails = {}; // Store full check-in data with timestamps
 
         snapshot.forEach((doc) => {
             const checkin = doc.data();
@@ -150,13 +151,33 @@ class FirebaseIntegration {
 
             if (!app.state.checkins[day]) {
                 app.state.checkins[day] = {};
+                app.state.checkinDetails[day] = [];
             }
 
             // Find member ID by matching user ID
             const member = app.state.members.find(m => m.userId === userId);
             if (member) {
                 app.state.checkins[day][member.id] = true;
+
+                // Store full check-in details including timestamp
+                app.state.checkinDetails[day].push({
+                    memberId: member.id,
+                    memberName: member.name,
+                    userId: userId,
+                    timestamp: checkin.timestamp,
+                    day: day
+                });
             }
+        });
+
+        // Sort check-ins by timestamp for each day to determine first anchor
+        Object.keys(app.state.checkinDetails).forEach(day => {
+            app.state.checkinDetails[day].sort((a, b) => {
+                // Handle null timestamps (shouldn't happen with serverTimestamp, but just in case)
+                if (!a.timestamp) return 1;
+                if (!b.timestamp) return -1;
+                return a.timestamp.toMillis() - b.timestamp.toMillis();
+            });
         });
 
         // Calculate current day
@@ -164,6 +185,51 @@ class FirebaseIntegration {
 
         // Re-render UI
         app.renderUI();
+    }
+
+    // ========================================
+    // FIRST ANCHOR HELPERS
+    // ========================================
+    getFirstAnchorOfDay(day) {
+        if (!window.ropedTeamApp) return null;
+
+        const app = window.ropedTeamApp;
+        const dayCheckins = app.state.checkinDetails[day];
+
+        if (!dayCheckins || dayCheckins.length === 0) {
+            return null;
+        }
+
+        // Return the first check-in (already sorted by timestamp)
+        return dayCheckins[0];
+    }
+
+    getLast30DaysFirstAnchors() {
+        if (!window.ropedTeamApp) return [];
+
+        const app = window.ropedTeamApp;
+        const currentDay = app.state.currentDay;
+        const firstAnchors = [];
+
+        // Get first anchors for the last 30 days (or up to current day if less than 30)
+        const daysToCheck = Math.min(30, currentDay);
+
+        for (let i = 0; i < daysToCheck; i++) {
+            const day = currentDay - i;
+            if (day < 1) break;
+
+            const firstAnchor = this.getFirstAnchorOfDay(day);
+            if (firstAnchor) {
+                firstAnchors.push({
+                    day: day,
+                    memberId: firstAnchor.memberId,
+                    memberName: firstAnchor.memberName,
+                    timestamp: firstAnchor.timestamp
+                });
+            }
+        }
+
+        return firstAnchors;
     }
 
     // ========================================

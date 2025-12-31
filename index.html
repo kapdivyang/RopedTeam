@@ -16,6 +16,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="first-anchor-styles.css">
 </head>
 
 <body>
@@ -48,6 +49,11 @@
             </div>
         </header>
 
+        <!-- First Anchor Badge -->
+        <section class="first-anchor-badge" id="firstAnchorBadge" style="display: none;">
+            <!-- Content will be dynamically generated -->
+        </section>
+
         <!-- Main Dashboard -->
         <main class="dashboard">
             <!-- Progress Overview Card -->
@@ -62,9 +68,9 @@
 
                 <div class="altitude-meter">
                     <div class="altitude-labels">
-                        <span class="summit-label">🏔️ Summit</span>
-                        <span class="altitude-value" id="altitudeValue">0%</span>
                         <span class="basecamp-label">⛺ Base</span>
+                        <span class="altitude-value" id="altitudeValue">0%</span>
+                        <span class="summit-label">🏔️ Summit</span>
                     </div>
                     <div class="altitude-track">
                         <div class="altitude-progress" id="altitudeProgress"></div>
@@ -79,7 +85,7 @@
                         <div class="stat-icon">⛺</div>
                         <div class="stat-content">
                             <div class="stat-value" id="baseCampsCount">0</div>
-                            <div class="stat-label">Base Camps</div>
+                            <div class="stat-label">Camps</div>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -142,6 +148,15 @@
                 </div>
             </section>
 
+            <!-- First Anchors History - Last 30 Days -->
+            <section class="first-anchors-history-section">
+                <h2 class="section-title">⚓ First Anchors - Last 30 Days</h2>
+                <p class="section-subtitle">Who's been the most dedicated early riser?</p>
+                <div class="first-anchors-list" id="firstAnchorsList">
+                    <!-- History will be dynamically generated -->
+                </div>
+            </section>
+
             <!-- The Roped Team Visualization -->
             <section class="roped-team-section">
                 <h2 class="section-title">The Roped Team</h2>
@@ -152,7 +167,7 @@
 
             <!-- Weekly Milestones -->
             <section class="milestones-section">
-                <h2 class="section-title">Base Camps Established</h2>
+                <h2 class="section-title">Camps Established</h2>
                 <div class="milestones-grid" id="milestonesGrid">
                     <!-- Milestone markers will be dynamically inserted -->
                 </div>

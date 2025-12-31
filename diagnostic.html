@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Diagnostic Tool</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #FFD700;
+            border-bottom: 2px solid #FFD700;
+            padding-bottom: 0.5rem;
+        }
+
+        h2 {
+            color: #4A90E2;
+            margin-top: 2rem;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .team-card {
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid #4A90E2;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .user-card {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10B981;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 4px solid #EF4444;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.2);
+            border-left: 4px solid #10B981;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .loading {
+            color: #FFD700;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            color: #FFD700;
+        }
+
+        .highlight {
+            background: rgba(255, 215, 0, 0.2);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 The Roped Team - Database Diagnostic Tool</h1>
+
+    <div class="section">
+        <h2>Instructions</h2>
+        <p>This tool will help you diagnose and fix team assignment issues. It will:</p>
+        <ul>
+            <li>List all teams in the database</li>
+            <li>Show all users and their team assignments</li>
+            <li>Identify which team each user is on</li>
+            <li>Provide options to fix mismatched teams</li>
+        </ul>
+        <button id="runDiagnostic">🔍 Run Diagnostic</button>
+    </div>
+
+    <div id="results"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const runBtn = document.getElementById('runDiagnostic');
+
+        runBtn.addEventListener('click', runDiagnostic);
+
+        async function runDiagnostic() {
+            resultsDiv.innerHTML = '<div class="loading">⏳ Running diagnostic...</div>';
+            runBtn.disabled = true;
+
+            try {
+                // Get all teams
+                const teamsSnapshot = await firebaseDB.collection('teams').get();
+                const teams = [];
+                teamsSnapshot.forEach(doc => {
+                    teams.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Get all users
+                const usersSnapshot = await firebaseDB.collection('users').get();
+                const users = [];
+                usersSnapshot.forEach(doc => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Get all check-ins
+                const checkinsSnapshot = await firebaseDB.collection('checkins').get();
+                const checkins = [];
+                checkinsSnapshot.forEach(doc => {
+                    checkins.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Display results
+                displayResults(teams, users, checkins);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                console.error(error);
+            } finally {
+                runBtn.disabled = false;
+            }
+        }
+
+        function displayResults(teams, users, checkins) {
+            let html = '';
+
+            // Summary
+            html += `<div class="section">`;
+            html += `<h2>📊 Summary</h2>`;
+            html += `<p><strong>Total Teams:</strong> ${teams.length}</p>`;
+            html += `<p><strong>Total Users:</strong> ${users.length}</p>`;
+            html += `<p><strong>Total Check-ins:</strong> ${checkins.length}</p>`;
+            html += `</div>`;
+
+            // Teams
+            html += `<div class="section">`;
+            html += `<h2>🏔️ Teams</h2>`;
+            teams.forEach((team, index) => {
+                html += `<div class="team-card">`;
+                html += `<h3>Team ${index + 1}: ${team.name || 'Unnamed'}</h3>`;
+                html += `<p><strong>Team ID:</strong> <code>${team.id}</code></p>`;
+                html += `<p><strong>Admin ID:</strong> <code>${team.adminId || 'N/A'}</code></p>`;
+                html += `<p><strong>Start Date:</strong> ${team.startDate || 'N/A'}</p>`;
+                html += `<p><strong>Goal Days:</strong> ${team.goalDays || 'N/A'}</p>`;
+                html += `<p><strong>Summit Prize:</strong> ${team.summitPrize || 'N/A'}</p>`;
+
+                if (team.members && team.members.length > 0) {
+                    html += `<h4>Members (${team.members.length}):</h4>`;
+                    html += `<table>`;
+                    html += `<tr><th>ID</th><th>Name</th><th>Habit</th><th>Email</th><th>User ID</th></tr>`;
+                    team.members.forEach(member => {
+                        const hasUserId = member.userId ? 'highlight' : '';
+                        html += `<tr class="${hasUserId}">`;
+                        html += `<td>${member.id}</td>`;
+                        html += `<td>${member.name}</td>`;
+                        html += `<td>${member.habit || 'N/A'}</td>`;
+                        html += `<td>${member.email || 'N/A'}</td>`;
+                        html += `<td>${member.userId || '❌ Not linked'}</td>`;
+                        html += `</tr>`;
+                    });
+                    html += `</table>`;
+                }
+
+                // Count check-ins for this team
+                const teamCheckins = checkins.filter(c => c.teamId === team.id);
+                html += `<p><strong>Check-ins for this team:</strong> ${teamCheckins.length}</p>`;
+
+                html += `</div>`;
+            });
+            html += `</div>`;
+
+            // Users
+            html += `<div class="section">`;
+            html += `<h2>👥 Users</h2>`;
+            users.forEach(user => {
+                const team = teams.find(t => t.id === user.teamId);
+                html += `<div class="user-card">`;
+                html += `<h3>${user.displayName || user.email}</h3>`;
+                html += `<p><strong>User ID:</strong> <code>${user.id}</code></p>`;
+                html += `<p><strong>Email:</strong> ${user.email}</p>`;
+                html += `<p><strong>Team ID:</strong> <code>${user.teamId || '❌ No team assigned'}</code></p>`;
+                if (team) {
+                    html += `<p><strong>Team Name:</strong> ${team.name}</p>`;
+
+                    // Check if user is linked in team members
+                    const memberEntry = team.members?.find(m => m.userId === user.id);
+                    if (memberEntry) {
+                        html += `<p class="success">✅ Properly linked as "${memberEntry.name}" in team</p>`;
+                    } else {
+                        html += `<p class="error">⚠️ User has teamId but is not linked in team's members array</p>`;
+                    }
+                }
+                html += `</div>`;
+            });
+            html += `</div>`;
+
+            // Analysis
+            html += `<div class="section">`;
+            html += `<h2>🔍 Analysis</h2>`;
+
+            // Find specific users
+            const sheetal = users.find(u => u.email === 'sheetaldivyang@gmail.com');
+            const adi = users.find(u => u.email === 'adi.d.kapadia@gmail.com');
+            const raja = users.find(u => u.email && u.email.toLowerCase().includes('raja'));
+
+            if (sheetal && adi) {
+                if (sheetal.teamId === adi.teamId) {
+                    html += `<div class="success">✅ Sheetal and Adi are on the same team (${sheetal.teamId})</div>`;
+                } else {
+                    html += `<div class="error">❌ <strong>ISSUE FOUND:</strong> Sheetal and Adi are on DIFFERENT teams!</div>`;
+                    html += `<p>Sheetal's team: <code>${sheetal.teamId || 'None'}</code></p>`;
+                    html += `<p>Adi's team: <code>${adi.teamId || 'None'}</code></p>`;
+                    html += `<h3>Solution:</h3>`;
+                    html += `<p>Use the "Link Member" tool in the admin panel to move Adi to Sheetal's team.</p>`;
+                    html += `<ol>`;
+                    html += `<li>Login as Sheetal (sheetaldivyang@gmail.com)</li>`;
+                    html += `<li>Open Admin Panel (⚙️ button)</li>`;
+                    html += `<li>Scroll to "Link Member to Team" section</li>`;
+                    html += `<li>Enter: adi.d.kapadia@gmail.com</li>`;
+                    html += `<li>Click "Link Member"</li>`;
+                    html += `<li>Ask Adi to refresh their page</li>`;
+                    html += `</ol>`;
+                }
+            }
+
+            html += `</div>`;
+
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+
+</html>
