@@ -717,6 +717,10 @@ body {
 .climber-status {
     font-size: 2rem;
     flex-shrink: 0;
+    padding-right: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .status-checked {
@@ -1430,6 +1434,47 @@ body {
 
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Fix 1: Center team progress cards on mobile */
+    .team-progress-grid {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+
+    .team-member-progress-card {
+        max-width: 400px;
+        width: 100%;
+    }
+
+    /* Fix 2: Prevent climber status icons from overflowing */
+    .climber-card {
+        padding: var(--spacing-sm);
+        gap: var(--spacing-sm);
+    }
+
+    .climber-status {
+        font-size: 1.75rem;
+        padding-right: 0;
+        margin-right: 0;
+    }
+
+    .climber-avatar {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+
+    .climber-name {
+        font-size: 1.125rem;
+    }
+
+    .climber-habit {
+        font-size: 0.8rem;
+    }
+
+    .climber-streak {
+        font-size: 0.7rem;
     }
 
     .milestones-grid {
