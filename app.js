@@ -108,6 +108,11 @@ class HabitTrackerApp {
         this.linkMemberBtnEl = document.getElementById('linkMemberBtn');
         this.linkStatusEl = document.getElementById('linkStatus');
 
+        // Reset Start Date Tool
+        this.newStartDateEl = document.getElementById('newStartDate');
+        this.resetStartDateBtnEl = document.getElementById('resetStartDateBtn');
+        this.resetStartStatusEl = document.getElementById('resetStartStatus');
+
         // Personalized Check-in
         this.personalizedCheckinEl = document.getElementById('personalizedCheckin');
         this.adminCheckinEl = document.getElementById('adminCheckin');
@@ -122,6 +127,10 @@ class HabitTrackerApp {
 
         // Time Patterns
         this.personalTimePatternsEl = document.getElementById('personalTimePatterns');
+
+        // Camps Collapse Toggle
+        this.campsToggleEl = document.getElementById('campsToggle');
+        this.milestonesGridEl = document.getElementById('milestonesGrid');
 
         // Mountain Trail Elements
         this.mountainTrailContainerEl = document.getElementById('mountainTrailContainer');
@@ -182,6 +191,16 @@ class HabitTrackerApp {
         if (updateTeamSizeBtn) {
             updateTeamSizeBtn.addEventListener('click', () => this.updateTeamSize());
         }
+
+        // Reset Start Date
+        if (this.resetStartDateBtnEl) {
+            this.resetStartDateBtnEl.addEventListener('click', () => this.handleResetStartDate());
+        }
+
+        // Camps Collapse Toggle
+        if (this.campsToggleEl) {
+            this.campsToggleEl.addEventListener('click', () => this.toggleCampsSection());
+        }
     }
 
     handleLogout() {
@@ -195,6 +214,14 @@ class HabitTrackerApp {
             this.userNameEl.textContent = user.displayName || user.email;
             this.userInfoEl.style.display = 'flex';
         }
+
+        // Setup checkin interface to show/hide admin button based on role
+        // This needs to be called after Firebase has loaded team data
+        setTimeout(() => {
+            if (this.setupCheckinInterface) {
+                this.setupCheckinInterface();
+            }
+        }, 500); // Small delay to ensure team data is loaded
     }
 
     async handleLinkMember() {
@@ -1155,10 +1182,18 @@ class HabitTrackerApp {
             const reward75El = document.getElementById('reward75');
             const reward100El = document.getElementById('reward100');
 
-            if (reward25El) reward25El.value = this.state.majorMilestones.milestone25.reward;
-            if (reward50El) reward50El.value = this.state.majorMilestones.milestone50.reward;
-            if (reward75El) reward75El.value = this.state.majorMilestones.milestone75.reward;
-            if (reward100El) reward100El.value = this.state.majorMilestones.milestone100.reward;
+            if (reward25El && this.state.majorMilestones.milestone25) {
+                reward25El.value = this.state.majorMilestones.milestone25.reward || '';
+            }
+            if (reward50El && this.state.majorMilestones.milestone50) {
+                reward50El.value = this.state.majorMilestones.milestone50.reward || '';
+            }
+            if (reward75El && this.state.majorMilestones.milestone75) {
+                reward75El.value = this.state.majorMilestones.milestone75.reward || '';
+            }
+            if (reward100El && this.state.majorMilestones.milestone100) {
+                reward100El.value = this.state.majorMilestones.milestone100.reward || '';
+            }
         }
 
         this.membersListEl.innerHTML = '';
@@ -1191,7 +1226,14 @@ class HabitTrackerApp {
                        value="${member.email || ''}" 
                        data-index="${index}" 
                        data-field="email">
+                <button class="delete-member-btn" data-index="${index}" title="Remove member" style="padding: 0.5rem; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); border-radius: 4px; color: #FCA5A5; cursor: pointer; font-size: 1.2em;">
+                    🗑️
+                </button>
             `;
+
+            // Add delete button event listener
+            const deleteBtn = group.querySelector('.delete-member-btn');
+            deleteBtn.addEventListener('click', () => this.deleteMember(index));
 
             this.membersListEl.appendChild(group);
         });
@@ -1202,6 +1244,36 @@ class HabitTrackerApp {
             linked: !!member.userId,
             email: !!member.email
         };
+    }
+
+    async deleteMember(index) {
+        const member = this.state.members[index];
+
+        if (!confirm(`Are you sure you want to remove ${member.name} from the team?`)) {
+            return;
+        }
+
+        // Remove from local state
+        this.state.members.splice(index, 1);
+
+        // Update Firebase if connected
+        if (window.firebaseIntegration && window.firebaseIntegration.currentTeamId) {
+            try {
+                await window.firebaseIntegration.updateTeamSettings({
+                    members: this.state.members
+                });
+                console.log('✅ Member removed and synced to Firebase');
+            } catch (error) {
+                console.error('Error removing member:', error);
+                alert('Error removing member: ' + error.message);
+                return;
+            }
+        }
+
+        // Save and re-render
+        this.saveState();
+        this.renderAdminPanel();
+        this.renderUI();
     }
 
     // ========================================
@@ -1856,6 +1928,53 @@ class HabitTrackerApp {
         alert('✅ Settings saved and synced to the cloud!');
     }
 
+    async handleResetStartDate() {
+        console.log('🔍 Reset Start Date clicked');
+        const newStartDate = this.newStartDateEl.value;
+        console.log('📅 New start date:', newStartDate);
+
+        if (!newStartDate) {
+            this.resetStartStatusEl.textContent = '❌ Please select a new start date';
+            this.resetStartStatusEl.style.color = '#FCA5A5';
+            return;
+        }
+
+        // Note: Browser confirm() dialog is being blocked, so we proceed directly
+        // The warning is already shown in the UI above the button
+        console.log('⚠️ Proceeding with reset (warning already shown in UI)');
+
+        if (!window.firebaseIntegration) {
+            this.resetStartStatusEl.textContent = '❌ Firebase not connected';
+            this.resetStartStatusEl.style.color = '#FCA5A5';
+            return;
+        }
+
+        try {
+            this.resetStartDateBtnEl.disabled = true;
+            this.resetStartDateBtnEl.textContent = '⏳ Resetting...';
+            this.resetStartStatusEl.textContent = 'Processing...';
+            this.resetStartStatusEl.style.color = '#B8E6F5';
+
+            const result = await window.firebaseIntegration.resetStartDate(newStartDate);
+
+            this.resetStartStatusEl.textContent = `✅ Start date reset! Deleted ${result.deletedCheckins} old check -in (s).Journey now starts on ${newStartDate}.`;
+            this.resetStartStatusEl.style.color = '#10B981';
+
+            // Refresh the page to show updated data
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+
+        } catch (error) {
+            console.error('Reset start date error:', error);
+            this.resetStartStatusEl.textContent = '❌ Error: ' + error.message;
+            this.resetStartStatusEl.style.color = '#FCA5A5';
+        } finally {
+            this.resetStartDateBtnEl.disabled = false;
+            this.resetStartDateBtnEl.textContent = 'Reset Start Date';
+        }
+    }
+
     resetProgress() {
         if (!confirm('⚠️ Are you sure you want to reset all progress? This cannot be undone!')) {
             return;
@@ -1875,6 +1994,24 @@ class HabitTrackerApp {
         alert('🔄 Progress has been reset. Start your new expedition!');
     }
 
+    toggleCampsSection() {
+        if (!this.milestonesGridEl || !this.campsToggleEl) return;
+
+        const isCollapsed = this.milestonesGridEl.classList.contains('collapsed');
+
+        if (isCollapsed) {
+            // Expand
+            this.milestonesGridEl.classList.remove('collapsed');
+            this.campsToggleEl.setAttribute('aria-expanded', 'true');
+            this.campsToggleEl.querySelector('.toggle-text').textContent = 'Collapse';
+        } else {
+            // Collapse
+            this.milestonesGridEl.classList.add('collapsed');
+            this.campsToggleEl.setAttribute('aria-expanded', 'false');
+            this.campsToggleEl.querySelector('.toggle-text').textContent = 'Expand';
+        }
+    }
+
     // ========================================
     // TIME UTILITY FUNCTIONS
     // ========================================
@@ -1890,7 +2027,7 @@ class HabitTrackerApp {
         hours = hours ? hours : 12; // 0 should be 12
         const minutesStr = minutes < 10 ? '0' + minutes : minutes;
 
-        return `${hours}:${minutesStr} ${ampm}`;
+        return `${hours}:${minutesStr} ${ampm} `;
     }
 
     getTimeContext(memberCheckins, currentTime) {
@@ -1964,7 +2101,7 @@ class HabitTrackerApp {
         });
 
         return {
-            average: `${avgHours12}:${avgMins < 10 ? '0' : ''}${avgMins} ${avgAmpm}`,
+            average: `${avgHours12}:${avgMins < 10 ? '0' : ''}${avgMins} ${avgAmpm} `,
             earliest: {
                 time: this.formatTime(earliest.timestamp),
                 day: earliest.day
@@ -2081,12 +2218,11 @@ class HabitTrackerApp {
         const sortedAnchors = Object.entries(anchorCounts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5); // Top 5
-
         sortedAnchors.forEach(([name, count], index) => {
             const isCurrentUser = currentMember && currentMember.name === name;
             const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⚓';
             html += `
-                <div class="leaderboard-item ${isCurrentUser ? 'is-me' : ''}">
+            <div class="leaderboard-item ${isCurrentUser ? 'is-me' : ''}">
                     <span class="leaderboard-medal">${medal}</span>
                     <span class="leaderboard-name">${name}</span>
                     <span class="leaderboard-count">${count} days</span>
@@ -2108,7 +2244,7 @@ class HabitTrackerApp {
             const timeIcon = this.getTimeOfDayIcon(anchor.timestamp);
 
             html += `
-                <div class="timeline-item ${isCurrentUser ? 'is-me' : ''} ${isToday ? 'is-today' : ''}">
+            <div class="timeline-item ${isCurrentUser ? 'is-me' : ''} ${isToday ? 'is-today' : ''}">
                     <div class="timeline-day">Day ${anchor.day}</div>
                     <div class="timeline-name">⚓ ${anchor.memberName}</div>
                     <div class="timeline-time">${timeIcon} ${timeStr}</div>

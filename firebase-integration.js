@@ -145,6 +145,12 @@ class FirebaseIntegration {
 
         // Re-render UI
         app.renderUI();
+
+        // IMPORTANT: Re-setup checkin interface after team data is loaded
+        // This ensures admin button visibility is correct
+        if (app.setupCheckinInterface) {
+            app.setupCheckinInterface();
+        }
     }
 
     syncCheckinsToApp(snapshot) {
@@ -157,6 +163,7 @@ class FirebaseIntegration {
         snapshot.forEach((doc) => {
             const checkin = doc.data();
             const day = checkin.day;
+            const memberId = checkin.memberId; // Get memberId directly
             const userId = checkin.userId;
 
             if (!app.state.checkins[day]) {
@@ -164,15 +171,19 @@ class FirebaseIntegration {
                 app.state.checkinDetails[day] = [];
             }
 
-            // Find member ID by matching user ID
-            const member = app.state.members.find(m => m.userId === userId);
-            if (member) {
-                app.state.checkins[day][member.id] = true;
+            // Find member by ID (much more reliable than userId)
+            const member = app.state.members.find(m => m.id === memberId);
+
+            // Fallback: if memberId is missing (from older records), try userId
+            const targetMember = member || (userId ? app.state.members.find(m => m.userId === userId) : null);
+
+            if (targetMember) {
+                app.state.checkins[day][targetMember.id] = true;
 
                 // Store full check-in details including timestamp
                 app.state.checkinDetails[day].push({
-                    memberId: member.id,
-                    memberName: member.name,
+                    memberId: targetMember.id,
+                    memberName: targetMember.name,
                     userId: userId,
                     timestamp: checkin.timestamp,
                     day: day
@@ -257,8 +268,9 @@ class FirebaseIntegration {
             throw new Error('Member not found');
         }
 
-        // Verify user can only check in for themselves
-        if (member.userId !== this.currentUser.uid) {
+        // Verify user can only check in for themselves, UNLESS they are the admin
+        const isAdmin = this.isAdmin();
+        if (!isAdmin && member.userId !== this.currentUser.uid) {
             throw new Error('You can only check in for yourself');
         }
 
@@ -268,7 +280,7 @@ class FirebaseIntegration {
             // Create check-in document
             await this.db.collection('checkins').add({
                 teamId: this.currentTeamId,
-                userId: this.currentUser.uid,
+                userId: member.userId || null, // Use member's userId if linked, otherwise null
                 memberId: memberId,
                 day: currentDay,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -341,6 +353,80 @@ class FirebaseIntegration {
             console.log('✅ Team settings updated');
         } catch (error) {
             console.error('Error updating team:', error);
+            throw error;
+        }
+    }
+
+    async resetStartDate(newStartDate) {
+        if (!this.currentTeamId) {
+            throw new Error('No team selected');
+        }
+
+        // Verify user is admin
+        if (this.currentTeam.adminId !== this.currentUser.uid) {
+            throw new Error('Only admin can reset start date');
+        }
+
+        try {
+            // Parse the new start date
+            const newStart = new Date(newStartDate);
+            newStart.setHours(0, 0, 0, 0); // Set to start of day
+
+            // Update team's start date
+            await this.db.collection('teams').doc(this.currentTeamId).update({
+                startDate: newStartDate
+            });
+
+            // Process check-ins: delete old ones and update 'day' for kept ones
+            const checkinsQuery = await this.db.collection('checkins')
+                .where('teamId', '==', this.currentTeamId)
+                .get();
+
+            const batch = this.db.batch();
+            let deletedCount = 0;
+            let updatedCount = 0;
+
+            checkinsQuery.forEach((doc) => {
+                const checkin = doc.data();
+
+                // Get the actual date of the check-in
+                if (checkin.timestamp) {
+                    const checkinDate = checkin.timestamp.toDate();
+                    const checkinDateBase = new Date(checkinDate);
+                    checkinDateBase.setHours(0, 0, 0, 0);
+
+                    // Delete if check-in was before the new start date
+                    if (checkinDateBase < newStart) {
+                        batch.delete(doc.ref);
+                        deletedCount++;
+                    } else {
+                        // Recalculate which 'day' this should be according to the new start date
+                        const timeDiff = checkinDateBase - newStart;
+                        const newDay = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+
+                        // Only update if the day number changed
+                        if (checkin.day !== newDay) {
+                            batch.update(doc.ref, { day: newDay });
+                            updatedCount++;
+                        }
+                    }
+                }
+            });
+
+            if (deletedCount > 0 || updatedCount > 0) {
+                await batch.commit();
+                console.log(`✅ Cleaned up check-ins: Deleted ${deletedCount}, Updated ${updatedCount}`);
+            }
+
+            console.log('✅ Start date reset to:', newStartDate);
+
+            // Reload team data to refresh the app
+            await this.loadTeamData();
+            this.syncTeamToApp();
+
+            return { deletedCheckins: deletedCount, updatedCheckins: updatedCount };
+        } catch (error) {
+            console.error('Error resetting start date:', error);
             throw error;
         }
     }

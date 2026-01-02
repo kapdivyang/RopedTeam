@@ -199,16 +199,7 @@
                 </div>
             </section>
 
-            <!-- Weekly Milestones -->
-            <section class="milestones-section">
-                <h2 class="section-title">Camps Established</h2>
-                <div class="milestones-grid" id="milestonesGrid">
-                    <!-- Milestone markers will be dynamically inserted -->
-                </div>
-            </section>
-
-
-            <!-- Individual Member Progress (Shows when user is selected) -->
+            <!-- Individual Member Progress (Shows when user is selected) - MOVED BEFORE CAMPS -->
             <section class="personal-progress-section hidden" id="personalProgressSection">
                 <h2 class="section-title">
                     <span id="personalProgressName">Your</span> Personal Journey
@@ -244,118 +235,150 @@
                         </div>
                     </div>
                 </div>
-    </div>
 
-    <!-- Time Patterns Section -->
-    <div class="personal-time-patterns" id="personalTimePatterns">
-        <!-- Time patterns will be dynamically generated -->
-    </div>
+                <!-- Time Patterns Section -->
+                <div class="personal-time-patterns" id="personalTimePatterns">
+                    <!-- Time patterns will be dynamically generated -->
+                </div>
 
-    <div class="personal-calendar">
-        <h3>Your Check-in History (Last 30 Days)</h3>
-        <div class="calendar-grid" id="personalCalendar">
-            <!-- Calendar will be dynamically generated -->
-        </div>
-        <div class="calendar-legend">
-            <span class="legend-item"><span class="legend-box checked"></span> Checked In</span>
-            <span class="legend-item"><span class="legend-box missed"></span> Missed</span>
-            <span class="legend-item"><span class="legend-box future"></span> Future</span>
-        </div>
-    </div>
-    </section>
-    </main>
-
-    <!-- Admin Panel (Hidden by default) -->
-    <aside class="admin-panel" id="adminPanel">
-        <button class="admin-toggle" id="adminToggle" style="display: none;">⚙️ Admin</button>
-        <div class="admin-content" id="adminContent">
-            <h3>Admin Settings</h3>
-
-            <div class="admin-section">
-                <label for="groupName">Group Name:</label>
-                <input type="text" id="groupName" placeholder="K2 Conquerors" value="K2 Conquerors">
-            </div>
-
-            <div class="admin-section">
-                <label for="prizeName">Summit Prize:</label>
-                <input type="text" id="prizeName" placeholder="Team Celebration Dinner" value="Team Celebration Dinner">
-            </div>
-
-            <div class="admin-section">
-                <label for="goalWeeks">Challenge Duration (weeks):</label>
-                <input type="number" id="goalWeeks" min="4" max="52" value="13" placeholder="13">
-                <small style="display: block; color: #B8E6F5; margin-top: 0.25rem;">Between 4-52 weeks (default: 13
-                    weeks = 91 days)</small>
-            </div>
-
-            <div class="admin-section">
-                <label>Major Milestone Rewards:</label>
-                <small style="display: block; color: #B8E6F5; margin-bottom: 0.75rem;">Rewards at 25%, 50%, 75%, and
-                    100% completion</small>
-
-                <div style="display: grid; gap: 0.5rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="min-width: 80px; font-size: 1.2em;">🏔️ 25%:</span>
-                        <input type="text" id="reward25" placeholder="Team Lunch" style="flex: 1;">
+                <div class="personal-calendar">
+                    <h3>Your Check-in History (Last 30 Days)</h3>
+                    <div class="calendar-grid" id="personalCalendar">
+                        <!-- Calendar will be dynamically generated -->
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="min-width: 80px; font-size: 1.2em;">⛰️ 50%:</span>
-                        <input type="text" id="reward50" placeholder="Movie Night" style="flex: 1;">
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="min-width: 80px; font-size: 1.2em;">🎯 75%:</span>
-                        <input type="text" id="reward75" placeholder="Adventure Day" style="flex: 1;">
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="min-width: 80px; font-size: 1.2em;">🏆 100%:</span>
-                        <input type="text" id="reward100" placeholder="Grand Celebration" style="flex: 1;">
+                    <div class="calendar-legend">
+                        <span class="legend-item"><span class="legend-box checked"></span> Checked In</span>
+                        <span class="legend-item"><span class="legend-box missed"></span> Missed</span>
+                        <span class="legend-item"><span class="legend-box future"></span> Future</span>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="admin-section">
-                <label for="teamSize">Team Size:</label>
-                <input type="number" id="teamSize" min="1" max="30" value="8" placeholder="8">
-                <button id="updateTeamSizeBtn" class="admin-save-btn"
-                    style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.875rem;">
-                    Update Team Size
-                </button>
-                <small style="display: block; color: #B8E6F5; margin-top: 0.25rem;">Between 1-30 members (default:
-                    8)</small>
-            </div>
-
-            <div class="admin-section">
-                <label>Team Members (<span id="currentTeamSize">8</span>):</label>
-                <div
-                    style="background: rgba(74, 144, 226, 0.1); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.875rem;">
-                    <strong>💡 Member Linking Guide:</strong><br>
-                    ✅ <strong>Linked</strong> - User account connected and ready<br>
-                    ⏳ <strong>Pending</strong> - Email added, waiting for user registration<br>
-                    ➕ <strong>Need Email</strong> - Add email to enable automatic linking
+            <!-- Weekly Milestones - NOW COLLAPSIBLE AND BELOW PERSONAL JOURNEY -->
+            <section class="milestones-section">
+                <div class="section-header-with-toggle">
+                    <h2 class="section-title">Camps Established</h2>
+                    <button class="collapse-toggle" id="campsToggle" aria-expanded="false">
+                        <span class="toggle-icon">▼</span>
+                        <span class="toggle-text">Expand</span>
+                    </button>
                 </div>
-                <div class="members-list" id="membersList">
-                    <!-- Member inputs will be here -->
+                <div class="milestones-grid collapsed" id="milestonesGrid">
+                    <!-- Milestone markers will be dynamically inserted -->
                 </div>
-            </div>
+            </section>
 
-            <div class="admin-section"
-                style="border-top: 2px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1rem;">
-                <label>🔗 Link Member to Team:</label>
-                <p style="font-size: 0.875rem; color: #B8E6F5; margin-bottom: 0.5rem;">
-                    If a member created their own team by mistake, enter their email here to move them to this team.
-                </p>
-                <input type="email" id="linkMemberEmail" placeholder="member@email.com" style="margin-bottom: 0.5rem;">
-                <button id="linkMemberBtn" class="admin-save-btn"
-                    style="background: linear-gradient(135deg, #4A90E2, #357ABD);">
-                    Link Member
-                </button>
-                <div id="linkStatus" style="margin-top: 0.5rem; font-size: 0.875rem;"></div>
-            </div>
+        </main>
 
-            <button id="saveSettings" class="admin-save-btn">Save Settings</button>
-            <button id="resetProgress" class="admin-reset-btn">Reset Progress</button>
-        </div>
-    </aside>
+        <!-- Admin Panel (At bottom of page) -->
+        <aside class="admin-panel" id="adminPanel">
+            <button class="admin-toggle" id="adminToggle">⚙️ Admin</button>
+            <div class="admin-content" id="adminContent">
+                <h3>Admin Settings</h3>
+
+                <div class="admin-section">
+                    <label for="groupName">Group Name:</label>
+                    <input type="text" id="groupName" placeholder="K2 Conquerors" value="K2 Conquerors">
+                </div>
+
+                <div class="admin-section">
+                    <label for="prizeName">Summit Prize:</label>
+                    <input type="text" id="prizeName" placeholder="Team Celebration Dinner"
+                        value="Team Celebration Dinner">
+                </div>
+
+                <div class="admin-section">
+                    <label for="goalWeeks">Challenge Duration (weeks):</label>
+                    <input type="number" id="goalWeeks" min="4" max="52" value="13" placeholder="13">
+                    <small style="display: block; color: #B8E6F5; margin-top: 0.25rem;">Between 4-52 weeks (default: 13
+                        weeks = 91 days)</small>
+                </div>
+
+                <div class="admin-section">
+                    <label>Major Milestone Rewards:</label>
+                    <small style="display: block; color: #B8E6F5; margin-bottom: 0.75rem;">Rewards at 25%, 50%, 75%, and
+                        100% completion</small>
+
+                    <div style="display: grid; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="min-width: 80px; font-size: 1.2em;">🏔️ 25%:</span>
+                            <input type="text" id="reward25" placeholder="Team Lunch" style="flex: 1;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="min-width: 80px; font-size: 1.2em;">⛰️ 50%:</span>
+                            <input type="text" id="reward50" placeholder="Movie Night" style="flex: 1;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="min-width: 80px; font-size: 1.2em;">🎯 75%:</span>
+                            <input type="text" id="reward75" placeholder="Adventure Day" style="flex: 1;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="min-width: 80px; font-size: 1.2em;">🏆 100%:</span>
+                            <input type="text" id="reward100" placeholder="Grand Celebration" style="flex: 1;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <label for="teamSize">Team Size:</label>
+                    <input type="number" id="teamSize" min="1" max="30" value="8" placeholder="8">
+                    <button id="updateTeamSizeBtn" class="admin-save-btn"
+                        style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.875rem;">
+                        Update Team Size
+                    </button>
+                    <small style="display: block; color: #B8E6F5; margin-top: 0.25rem;">Between 1-30 members (default:
+                        8)</small>
+                </div>
+
+                <div class="admin-section">
+                    <label>Team Members (<span id="currentTeamSize">8</span>):</label>
+                    <div
+                        style="background: rgba(74, 144, 226, 0.1); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.875rem;">
+                        <strong>💡 Member Linking Guide:</strong><br>
+                        ✅ <strong>Linked</strong> - User account connected and ready<br>
+                        ⏳ <strong>Pending</strong> - Email added, waiting for user registration<br>
+                        ➕ <strong>Need Email</strong> - Add email to enable automatic linking
+                    </div>
+                    <div class="members-list" id="membersList">
+                        <!-- Member inputs will be here -->
+                    </div>
+                </div>
+
+                <div class="admin-section"
+                    style="border-top: 2px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1rem;">
+                    <label>🔗 Link Member to Team:</label>
+                    <p style="font-size: 0.875rem; color: #B8E6F5; margin-bottom: 0.5rem;">
+                        If a member created their own team by mistake, enter their email here to move them to this team.
+                    </p>
+                    <input type="email" id="linkMemberEmail" placeholder="member@email.com"
+                        style="margin-bottom: 0.5rem;">
+                    <button id="linkMemberBtn" class="admin-save-btn"
+                        style="background: linear-gradient(135deg, #4A90E2, #357ABD);">
+                        Link Member
+                    </button>
+                    <div id="linkStatus" style="margin-top: 0.5rem; font-size: 0.875rem;"></div>
+                </div>
+
+                <div class="admin-section"
+                    style="border-top: 2px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px; padding: 1rem;">
+                    <label>🗓️ Reset Expedition Start Date:</label>
+                    <p style="font-size: 0.875rem; color: #FCA5A5; margin-bottom: 0.5rem;">
+                        ⚠️ <strong>Warning:</strong> This will change the start date and delete ALL check-ins before the
+                        new
+                        date. Use this only if some members couldn't join on the original start date.
+                    </p>
+                    <input type="date" id="newStartDate" value="2026-01-01" style="margin-bottom: 0.5rem;">
+                    <button id="resetStartDateBtn" class="admin-save-btn"
+                        style="background: linear-gradient(135deg, #EF4444, #DC2626);">
+                        Reset Start Date
+                    </button>
+                    <div id="resetStartStatus" style="margin-top: 0.5rem; font-size: 0.875rem;"></div>
+                </div>
+
+                <button id="saveSettings" class="admin-save-btn">Save Settings</button>
+                <button id="resetProgress" class="admin-reset-btn">Reset Progress</button>
+            </div>
+        </aside>
     </div>
 
     <!-- Celebration Modal -->

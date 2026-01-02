@@ -779,6 +779,54 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--spacing-md);
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    max-height: 2000px;
+    /* Large enough for expanded state */
+    opacity: 1;
+    overflow: hidden;
+}
+
+.milestones-grid.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+/* Section header with toggle button */
+.section-header-with-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.collapse-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    color: var(--color-ice);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.collapse-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+    font-size: 0.75rem;
+}
+
+.collapse-toggle[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
 }
 
 .milestone-marker {
@@ -1225,7 +1273,8 @@ body {
    ======================================== */
 .admin-panel {
     position: fixed;
-    top: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    /* Changed from top to bottom */
     right: var(--spacing-lg);
     z-index: 1000;
 }
@@ -1249,7 +1298,8 @@ body {
 
 .admin-content {
     position: absolute;
-    top: 60px;
+    bottom: 60px;
+    /* Changed from top to bottom */
     right: 0;
     width: 450px;
     max-height: 80vh;
