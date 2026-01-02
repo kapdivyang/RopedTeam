@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="first-anchor-styles.css">
     <link rel="stylesheet" href="time-patterns-styles.css">
+    <link rel="stylesheet" href="mountain-trail.css">
 </head>
 
 <body>
@@ -38,15 +39,16 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <div class="user-info" id="userInfo" style="display: none;">
-                        <span class="user-name" id="userName">Loading...</span>
-                        <button class="logout-btn" id="logoutBtn">Logout</button>
-                    </div>
                     <div class="summit-prize">
                         <span class="prize-label">Summit Prize</span>
                         <span class="prize-value" id="summitPrize">Team Celebration Dinner</span>
                     </div>
                 </div>
+            </div>
+            <!-- User Info - Below Summit Prize -->
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span class="user-name" id="userName">Loading...</span>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
             </div>
         </header>
 
@@ -57,30 +59,61 @@
 
         <!-- Main Dashboard -->
         <main class="dashboard">
-            <!-- Progress Overview Card -->
-            <section class="progress-overview">
-                <div class="overview-header">
-                    <h2>Expedition Progress</h2>
-                    <div class="day-counter">
-                        <span class="current-day" id="currentDay">1</span>
-                        <span class="total-days">/ 90 Days</span>
+            <!-- Mountain Trail Progress (HERO ELEMENT) -->
+            <section class="mountain-trail-section" id="mountainTrailSection">
+                <!-- Screen reader announcement -->
+                <div class="sr-only" role="status" aria-live="polite" id="trailAnnouncement">
+                    Progress: <span id="srProgress">0</span>%.
+                    You are at day <span id="srDay">1</span> of <span id="srTotal">90</span>.
+                </div>
+
+                <!-- SVG Trail Container -->
+                <div class="mountain-trail-container" id="mountainTrailContainer">
+                    <!-- Summit glow effect -->
+                    <div class="summit-glow"></div>
+                    <!-- Fog overlay at base -->
+                    <div class="trail-fog-overlay"></div>
+                    <!-- Dynamically generated SVG will be inserted here -->
+                </div>
+
+                <!-- Progress Narrative -->
+                <div class="progress-narrative" id="progressNarrative">
+                    🥾 Your expedition begins! Take your first step today.
+                </div>
+
+                <!-- Trail Stats -->
+                <div class="trail-stats">
+                    <div class="trail-stat">
+                        <span class="trail-stat-value" id="trailDay">1</span>
+                        <span class="trail-stat-label">/ <span id="trailTotal">90</span> Days</span>
+                    </div>
+                    <div class="trail-stat">
+                        <span class="trail-stat-value" id="trailAltitude">0%</span>
+                        <span class="trail-stat-label">Altitude</span>
                     </div>
                 </div>
 
-                <div class="altitude-meter">
-                    <div class="altitude-labels">
-                        <span class="basecamp-label">⛺ Base</span>
-                        <span class="altitude-value" id="altitudeValue">0%</span>
-                        <span class="summit-label">🏔️ Summit</span>
-                    </div>
-                    <div class="altitude-track">
-                        <div class="altitude-progress" id="altitudeProgress"></div>
-                        <div class="team-marker" id="teamMarker">
-                            <div class="marker-icon">🧗</div>
-                        </div>
-                    </div>
+                <!-- Team Toggle -->
+                <div class="team-toggle" id="teamToggle" role="button" tabindex="0" aria-pressed="false">
+                    <span class="team-toggle-text">
+                        <span id="teammateCount">0</span> teammates climbing with you
+                    </span>
+                    <span class="team-toggle-icon" id="teamToggleIcon">👥</span>
                 </div>
 
+                <!-- Team Legend (Hidden by default) -->
+                <div class="team-legend" id="teamLegend" aria-hidden="true">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <!-- Expand Button -->
+                <button class="expand-button" id="expandTrailBtn" aria-expanded="false">
+                    Explore Full Journey
+                </button>
+            </section>
+
+            <!-- Stats Grid (Below Trail) -->
+            <section class="progress-overview" id="progressStats">
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon">⛺</div>

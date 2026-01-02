@@ -1,0 +1,623 @@
+/* ============================================
+   MOUNTAIN TRAIL PROGRESS COMPONENT
+   ============================================ */
+
+/* Container States */
+.mountain-trail-section {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-lg);
+}
+
+.mountain-trail-container {
+    height: 65vh;
+    max-height: 600px;
+    min-height: 350px;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg,
+            rgba(26, 35, 50, 0.9) 0%,
+            rgba(45, 62, 80, 0.8) 50%,
+            rgba(74, 144, 226, 0.6) 100%);
+}
+
+.mountain-trail-container.expanded {
+    height: auto;
+    max-height: 1200px;
+    overflow-y: auto;
+}
+
+/* SVG Canvas */
+.trail-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Trail Paths */
+.trail-path-bg {
+    stroke: #475569;
+    stroke-width: 3;
+    stroke-dasharray: 6, 6;
+    fill: none;
+    opacity: 0.4;
+}
+
+.trail-path-progress {
+    stroke: url(#trailGradient);
+    stroke-width: 5;
+    fill: none;
+    stroke-linecap: round;
+    will-change: stroke-dashoffset;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+}
+
+/* User Marker */
+.user-marker {
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.5s ease-out;
+}
+
+.user-marker-pulse {
+    animation: userPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes userPulse {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 16px rgba(251, 191, 36, 0.9));
+    }
+}
+
+.user-marker-circle {
+    transition: transform 0.3s ease;
+}
+
+.user-marker:hover .user-marker-circle {
+    transform: scale(1.1);
+}
+
+/* Camp Markers */
+.camp-marker {
+    cursor: pointer;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+    transform-origin: center center;
+}
+
+.camp-marker:hover {
+    filter: brightness(1.4) drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+    /* ✅ Using filter instead of transform - no position conflict */
+}
+
+.camp-marker.established {
+    animation: campPop 0.4s ease-out;
+}
+
+@keyframes campPop {
+    0% {
+        opacity: 0;
+        filter: brightness(0.5);
+    }
+
+    50% {
+        filter: brightness(1.3);
+    }
+
+    100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+}
+
+/* Camp Tooltip */
+.camp-tooltip {
+    position: absolute;
+    background: rgba(15, 23, 42, 0.95);
+    color: var(--color-snow);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 100;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.camp-marker:hover+.camp-tooltip,
+.camp-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Major Milestones */
+.major-milestone {
+    cursor: pointer;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+    transform-origin: center center;
+}
+
+.major-milestone.reached {
+    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.8));
+    animation: milestoneGlow 2s ease-in-out infinite;
+}
+
+@keyframes milestoneGlow {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 16px rgba(251, 191, 36, 1));
+    }
+}
+
+.major-milestone:hover {
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 1)) brightness(1.3);
+    /* ✅ Enhanced glow and brightness without transform conflict */
+}
+
+.milestone-label {
+    font-size: 10px;
+    font-weight: 600;
+    fill: var(--color-snow);
+    text-anchor: middle;
+    opacity: 0.9;
+}
+
+/* Base Camp & Summit Labels */
+.trail-label {
+    font-size: 14px;
+    font-weight: 700;
+    fill: var(--color-snow);
+    text-anchor: middle;
+}
+
+.summit-label {
+    fill: var(--color-gold);
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+}
+
+.basecamp-label {
+    fill: var(--color-ice);
+}
+
+/* Team Markers */
+.team-marker-small {
+    opacity: 0;
+    transition: opacity 0.3s ease-in, filter 0.2s ease;
+    cursor: pointer;
+    transform-origin: center center;
+}
+
+.team-marker-small.visible {
+    opacity: 1;
+}
+
+.team-marker-small:hover {
+    filter: brightness(1.4) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+    /* ✅ Using filter instead of transform */
+}
+
+.team-marker-cluster {
+    position: relative;
+}
+
+.team-marker-count {
+    font-size: 10px;
+    font-weight: bold;
+    fill: white;
+}
+
+.team-marker-dot {
+    transition: transform 0.2s ease;
+}
+
+.team-marker-dot.checked-in {
+    stroke: var(--color-success);
+    stroke-width: 2;
+}
+
+/* Progress Narrative */
+.progress-narrative {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-ice);
+    margin: var(--spacing-md) 0;
+    min-height: 24px;
+    padding: 0 var(--spacing-md);
+    animation: narrativeFadeIn 0.4s ease-in;
+}
+
+@keyframes narrativeFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Trail Stats */
+.trail-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.trail-stat {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.trail-stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    font-family: var(--font-primary);
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+}
+
+.trail-stat-label {
+    font-size: 0.875rem;
+    color: var(--color-ice);
+    margin-top: 0.25rem;
+}
+
+/* Team Toggle Button */
+.team-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: rgba(71, 85, 105, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: var(--spacing-sm) auto;
+    width: fit-content;
+}
+
+.team-toggle:hover {
+    background: rgba(71, 85, 105, 0.5);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.team-toggle.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--color-success);
+}
+
+.team-toggle-text {
+    font-size: 14px;
+    color: var(--color-ice);
+    font-weight: 500;
+}
+
+.team-toggle-icon {
+    font-size: 1.25rem;
+}
+
+/* Expand/Collapse Button */
+.expand-button {
+    display: block;
+    margin: var(--spacing-md) auto;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(59, 130, 246, 0.3));
+    color: var(--color-snow);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.expand-button:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.5), rgba(59, 130, 246, 0.5));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+}
+
+.expand-button:focus {
+    outline: 2px solid var(--color-sky-light);
+    outline-offset: 2px;
+}
+
+/* Team Legend */
+.team-legend {
+    display: none;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: var(--spacing-md);
+    background: rgba(51, 65, 85, 0.3);
+    border-radius: var(--radius-md);
+    margin-top: var(--spacing-sm);
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.team-legend.visible {
+    display: flex;
+    animation: legendFadeIn 0.3s ease-out;
+}
+
+@keyframes legendFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.team-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+}
+
+.team-legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+}
+
+.team-legend-dot.checked-in {
+    box-shadow: 0 0 6px var(--color-success);
+    border-color: var(--color-success);
+}
+
+.team-legend-name {
+    font-size: 13px;
+    color: var(--color-ice);
+    font-weight: 500;
+}
+
+.team-legend-status {
+    font-size: 11px;
+    color: rgba(184, 230, 245, 0.7);
+}
+
+/* Depth Effects - Fog at Base */
+.trail-fog-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30%;
+    background: linear-gradient(to top,
+            rgba(26, 35, 50, 0.8) 0%,
+            transparent 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Summit Glow Effect */
+.summit-glow {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 100px;
+    background: radial-gradient(ellipse at center,
+            rgba(251, 191, 36, 0.3) 0%,
+            transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+    animation: summitGlow 3s ease-in-out infinite;
+}
+
+@keyframes summitGlow {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: translateX(-50%) scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: translateX(-50%) scale(1.1);
+    }
+}
+
+/* Confetti Container */
+.confetti-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 100;
+}
+
+.confetti-particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+}
+
+.confetti-particle.active {
+    animation: confettiFall 2s ease-out forwards;
+}
+
+@keyframes confettiFall {
+    0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(300px) rotate(720deg);
+    }
+}
+
+/* Screen Reader Only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .mountain-trail-container {
+        height: 55vh;
+        max-height: 450px;
+        min-height: 300px;
+    }
+
+    .trail-stat-value {
+        font-size: 2rem;
+    }
+
+    .progress-narrative {
+        font-size: 14px;
+        padding: 0 var(--spacing-sm);
+    }
+
+    .trail-stats {
+        gap: var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .team-legend {
+        gap: 8px;
+        padding: var(--spacing-sm);
+    }
+
+    .team-legend-item {
+        padding: 4px 10px;
+    }
+
+    .expand-button {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mountain-trail-container {
+        height: 50vh;
+        min-height: 280px;
+    }
+
+    .trail-stat-value {
+        font-size: 1.75rem;
+    }
+
+    .trail-stats {
+        gap: var(--spacing-md);
+    }
+
+    .team-toggle {
+        padding: 8px 16px;
+    }
+
+    .team-toggle-text {
+        font-size: 13px;
+    }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+
+    .user-marker-pulse,
+    .major-milestone.reached,
+    .summit-glow,
+    .confetti-particle {
+        animation: none !important;
+    }
+
+    .trail-path-progress,
+    .user-marker,
+    .camp-marker,
+    .major-milestone,
+    .team-marker-small {
+        transition-duration: 0.01ms !important;
+    }
+
+    .camp-marker:hover,
+    .major-milestone:hover {
+        filter: none;
+        /* Remove filter effects on reduced motion */
+    }
+}
+
+/* Focus States for Accessibility */
+.camp-marker:focus,
+.major-milestone:focus,
+.team-toggle:focus,
+.expand-button:focus {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .trail-path-bg {
+        stroke: #ffffff;
+        opacity: 0.8;
+    }
+
+    .trail-path-progress {
+        stroke: #00ff00;
+    }
+
+    .progress-narrative,
+    .trail-stat-label,
+    .team-toggle-text,
+    .team-legend-name {
+        color: #ffffff;
+    }
+}

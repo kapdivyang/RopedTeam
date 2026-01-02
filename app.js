@@ -122,6 +122,29 @@ class HabitTrackerApp {
 
         // Time Patterns
         this.personalTimePatternsEl = document.getElementById('personalTimePatterns');
+
+        // Mountain Trail Elements
+        this.mountainTrailContainerEl = document.getElementById('mountainTrailContainer');
+        this.progressNarrativeEl = document.getElementById('progressNarrative');
+        this.trailDayEl = document.getElementById('trailDay');
+        this.trailTotalEl = document.getElementById('trailTotal');
+        this.trailAltitudeEl = document.getElementById('trailAltitude');
+        this.teammateCountEl = document.getElementById('teammateCount');
+        this.teamToggleEl = document.getElementById('teamToggle');
+        this.teamLegendEl = document.getElementById('teamLegend');
+        this.expandTrailBtnEl = document.getElementById('expandTrailBtn');
+        this.srProgressEl = document.getElementById('srProgress');
+        this.srDayEl = document.getElementById('srDay');
+        this.srTotalEl = document.getElementById('srTotal');
+
+        // Trail state
+        this.trailState = {
+            isExpanded: false,
+            showTeammates: false,
+            cachedPathLength: null,
+            prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+            isLowEndDevice: navigator.hardwareConcurrency < 4
+        };
     }
 
     attachEventListeners() {
@@ -352,6 +375,7 @@ class HabitTrackerApp {
     renderUI() {
         this.renderHeader();
         this.renderFirstAnchorBadge(); // NEW: Render first anchor badge
+        this.renderMountainTrail(); // Mountain Trail Progress
         this.renderProgressOverview();
         this.renderTeamProgressOverview();
         this.renderRopedTeam();
@@ -360,6 +384,7 @@ class HabitTrackerApp {
         this.renderUserSelect();
         this.renderAdminPanel();
         this.setupCheckinInterface(); // ADD THIS LINE
+        this.setupTrailInteractions(); // Mountain Trail interactions
     }
 
     renderHeader() {
@@ -367,15 +392,6 @@ class HabitTrackerApp {
     }
 
     renderProgressOverview() {
-        // Current Day
-        this.currentDayEl.textContent = this.state.currentDay;
-
-        // Altitude Progress
-        const progress = (this.state.currentDay / this.state.goalDays) * 100;
-        this.altitudeValueEl.textContent = `${Math.round(progress)}%`;
-        this.altitudeProgressEl.style.width = `${progress}%`;
-        this.teamMarkerEl.style.left = `${progress}%`;
-
         // Base Camps Count
         this.baseCampsCountEl.textContent = this.state.baseCamps.length;
 
@@ -386,6 +402,34 @@ class HabitTrackerApp {
         // Today's Check-ins
         const todayCheckins = this.getTodayCheckins();
         this.todayCheckinsEl.textContent = `${todayCheckins}/${this.state.members.length}`;
+
+        // Update trail stats
+        if (this.trailDayEl) {
+            this.trailDayEl.textContent = this.state.currentDay;
+        }
+        if (this.trailTotalEl) {
+            this.trailTotalEl.textContent = this.state.goalDays;
+        }
+        if (this.trailAltitudeEl) {
+            const progress = (this.state.currentDay / this.state.goalDays) * 100;
+            this.trailAltitudeEl.textContent = `${Math.round(progress)}%`;
+        }
+
+        // Update screen reader elements
+        if (this.srProgressEl) {
+            this.srProgressEl.textContent = Math.round((this.state.currentDay / this.state.goalDays) * 100);
+        }
+        if (this.srDayEl) {
+            this.srDayEl.textContent = this.state.currentDay;
+        }
+        if (this.srTotalEl) {
+            this.srTotalEl.textContent = this.state.goalDays;
+        }
+
+        // Update teammate count
+        if (this.teammateCountEl) {
+            this.teammateCountEl.textContent = this.state.members.length - 1;
+        }
     }
 
     renderTeamProgressOverview() {
@@ -555,6 +599,512 @@ class HabitTrackerApp {
         }
     }
 
+    // ========================================
+    // MOUNTAIN TRAIL PROGRESS
+    // ========================================
+
+    renderMountainTrail() {
+        if (!this.mountainTrailContainerEl) return;
+
+        // Generate SVG structure
+        const svg = this.createTrailSVG();
+
+        // Clear existing SVG (keep fog and glow overlays)
+        const existingSvg = this.mountainTrailContainerEl.querySelector('.trail-svg');
+        if (existingSvg) {
+            existingSvg.remove();
+        }
+
+        // Insert SVG before the overlays
+        this.mountainTrailContainerEl.insertBefore(svg, this.mountainTrailContainerEl.firstChild);
+
+        // Calculate and cache path length
+        const pathElement = svg.querySelector('.trail-path-bg');
+        if (pathElement) {
+            this.trailState.cachedPathLength = pathElement.getTotalLength();
+        }
+
+        // Render progress stroke
+        this.updateProgressStroke();
+
+        // Update narrative
+        this.updateProgressNarrative();
+    }
+
+    createTrailSVG() {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 800 500');
+        svg.setAttribute('class', 'trail-svg');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        svg.setAttribute('role', 'img');
+        svg.setAttribute('aria-label', `Expedition progress: Day ${this.state.currentDay} of ${this.state.goalDays}`);
+
+        // Accessibility title and description
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        title.textContent = `Team expedition progress: ${this.state.currentDay} out of ${this.state.goalDays} days`;
+        svg.appendChild(title);
+
+        const desc = document.createElementNS('http://www.w3.org/2000/svg', 'desc');
+        desc.textContent = 'Visual mountain trail showing team journey from base camp to summit';
+        svg.appendChild(desc);
+
+        // Add gradient definition
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        defs.innerHTML = `
+            <linearGradient id="trailGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+            </linearGradient>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        `;
+        svg.appendChild(defs);
+
+        // Generate trail path
+        const pathData = this.generateTrailPath();
+
+        // Add background path (dotted trail)
+        const bgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        bgPath.setAttribute('d', pathData);
+        bgPath.setAttribute('class', 'trail-path-bg');
+        svg.appendChild(bgPath);
+
+        // Add progress path
+        const progressPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        progressPath.setAttribute('d', pathData);
+        progressPath.setAttribute('class', 'trail-path-progress');
+        progressPath.setAttribute('id', 'trailProgressPath');
+        svg.appendChild(progressPath);
+
+        // Add camp markers
+        this.placeCampMarkers(svg);
+
+        // Add milestone markers
+        this.placeMilestoneMarkers(svg);
+
+        // Add user marker
+        this.placeUserMarker(svg);
+
+        // Add base camp and summit labels
+        this.placeTrailLabels(svg);
+
+        // Add team markers (hidden by default)
+        this.placeTeamMarkers(svg);
+
+        return svg;
+    }
+
+    generateTrailPath() {
+        // Trail points defining the zig-zag path (bottom to top)
+        const points = [
+            { x: 100, y: 450 },   // Base Camp (Day 0)
+            { x: 250, y: 380 },   // First turn
+            { x: 450, y: 320 },   // ~Day 30
+            { x: 600, y: 250 },   // Halfway Peak (Day 45)
+            { x: 500, y: 180 },   // ~Day 60
+            { x: 650, y: 100 },   // ~Day 75
+            { x: 700, y: 50 }     // Summit (Day 90)
+        ];
+
+        let path = `M ${points[0].x} ${points[0].y}`;
+
+        for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+
+            // Control points for smooth bezier curves
+            const cp1x = prev.x + (curr.x - prev.x) * 0.5;
+            const cp1y = prev.y;
+            const cp2x = prev.x + (curr.x - prev.x) * 0.5;
+            const cp2y = curr.y;
+
+            path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`;
+        }
+
+        return path;
+    }
+
+    calculateTrailPosition(day, totalDays) {
+        if (!this.trailState.cachedPathLength) return { x: 100, y: 450 };
+
+        const percentage = Math.min(day / totalDays, 1);
+        const targetLength = this.trailState.cachedPathLength * percentage;
+
+        const pathElement = document.querySelector('.trail-path-bg');
+        if (!pathElement) return { x: 100, y: 450 };
+
+        const point = pathElement.getPointAtLength(targetLength);
+        return { x: point.x, y: point.y };
+    }
+
+    updateProgressStroke() {
+        const progressPath = document.getElementById('trailProgressPath');
+        if (!progressPath || !this.trailState.cachedPathLength) return;
+
+        const pathLength = this.trailState.cachedPathLength;
+        const percentage = (this.state.currentDay / this.state.goalDays) * 100;
+        const dashLength = (percentage / 100) * pathLength;
+
+        progressPath.style.strokeDasharray = `${dashLength} ${pathLength}`;
+    }
+
+    placeUserMarker(svg) {
+        const position = this.calculateTrailPosition(this.state.currentDay, this.state.goalDays);
+
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        marker.setAttribute('class', this.trailState.prefersReducedMotion ? 'user-marker' : 'user-marker user-marker-pulse');
+        marker.setAttribute('transform', `translate(${position.x}, ${position.y})`);
+        marker.setAttribute('id', 'userTrailMarker');
+
+        // Avatar circle
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', '22');
+        circle.setAttribute('fill', '#fbbf24');
+        circle.setAttribute('stroke', 'white');
+        circle.setAttribute('stroke-width', '3');
+        circle.setAttribute('class', 'user-marker-circle');
+
+        // Hiker emoji
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dy', '0.35em');
+        text.setAttribute('font-size', '24');
+        text.textContent = '🥾';
+
+        marker.appendChild(circle);
+        marker.appendChild(text);
+        svg.appendChild(marker);
+    }
+
+    placeCampMarkers(svg) {
+        const totalWeeks = Math.ceil(this.state.goalDays / 7);
+        const majorWeeks = [
+            Math.round(totalWeeks * 0.25),
+            Math.round(totalWeeks * 0.50),
+            Math.round(totalWeeks * 0.75),
+            totalWeeks
+        ];
+
+        for (let week = 1; week <= totalWeeks; week++) {
+            // Skip major milestone weeks (they get special markers)
+            if (majorWeeks.includes(week)) continue;
+
+            const day = week * 7;
+            if (day > this.state.goalDays) break;
+
+            const position = this.calculateTrailPosition(day, this.state.goalDays);
+            const established = this.state.baseCamps.includes(week);
+
+            const camp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            camp.setAttribute('class', `camp-marker ${established ? 'established' : ''}`);
+            camp.setAttribute('transform', `translate(${position.x}, ${position.y})`);
+            camp.setAttribute('tabindex', '0');
+            camp.setAttribute('role', 'button');
+            camp.setAttribute('aria-label', `Week ${week} · Day ${day} ${established ? '(Established)' : ''}`);
+
+            const campCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            campCircle.setAttribute('r', '12');
+            campCircle.setAttribute('fill', established ? 'rgba(16, 185, 129, 0.8)' : 'rgba(71, 85, 105, 0.6)');
+            campCircle.setAttribute('stroke', established ? '#10b981' : '#64748b');
+            campCircle.setAttribute('stroke-width', '2');
+
+            const campText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            campText.setAttribute('text-anchor', 'middle');
+            campText.setAttribute('dy', '0.35em');
+            campText.setAttribute('font-size', '14');
+            campText.textContent = established ? '⛺' : '🏔️';
+
+            camp.appendChild(campCircle);
+            camp.appendChild(campText);
+            svg.appendChild(camp);
+        }
+    }
+
+    placeMilestoneMarkers(svg) {
+        const milestones = [
+            { percentage: 25, label: 'Quarter Summit', emoji: '🎯', reached: false },
+            { percentage: 50, label: 'Halfway Peak', emoji: '⛰️', reached: false },
+            { percentage: 75, label: 'Final Ascent', emoji: '🚩', reached: false },
+            { percentage: 100, label: 'Summit', emoji: '🏔️', reached: false }
+        ];
+
+        milestones.forEach(milestone => {
+            const day = Math.round((milestone.percentage / 100) * this.state.goalDays);
+            const position = this.calculateTrailPosition(day, this.state.goalDays);
+            const reached = this.state.currentDay >= day;
+
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            marker.setAttribute('class', `major-milestone ${reached ? 'reached' : ''}`);
+            marker.setAttribute('transform', `translate(${position.x}, ${position.y})`);
+            marker.setAttribute('tabindex', '0');
+            marker.setAttribute('role', 'button');
+            marker.setAttribute('aria-label', `${milestone.label} at ${milestone.percentage}% ${reached ? '(Reached)' : ''}`);
+
+            // Larger circle for milestones
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', '18');
+            circle.setAttribute('fill', reached ? '#fbbf24' : '#475569');
+            circle.setAttribute('stroke', reached ? '#fbbf24' : '#64748b');
+            circle.setAttribute('stroke-width', '3');
+            if (reached && !this.trailState.isLowEndDevice) {
+                circle.setAttribute('filter', 'url(#glow)');
+            }
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dy', '0.35em');
+            text.setAttribute('font-size', '18');
+            text.textContent = milestone.emoji;
+
+            // Label below
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('class', 'milestone-label');
+            label.setAttribute('y', '32');
+            label.setAttribute('font-size', '10');
+            label.setAttribute('fill', reached ? '#fbbf24' : '#94a3b8');
+            label.textContent = milestone.label;
+
+            marker.appendChild(circle);
+            marker.appendChild(text);
+            marker.appendChild(label);
+            svg.appendChild(marker);
+        });
+    }
+
+    placeTrailLabels(svg) {
+        // Base Camp label
+        const baseLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        baseLabel.setAttribute('class', 'trail-label basecamp-label');
+        baseLabel.setAttribute('x', '100');
+        baseLabel.setAttribute('y', '485');
+        baseLabel.textContent = '⛺ Base Camp';
+        svg.appendChild(baseLabel);
+
+        // Summit label
+        const summitLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        summitLabel.setAttribute('class', 'trail-label summit-label');
+        summitLabel.setAttribute('x', '700');
+        summitLabel.setAttribute('y', '25');
+        summitLabel.textContent = '🏔️ Summit';
+        svg.appendChild(summitLabel);
+    }
+
+    placeTeamMarkers(svg) {
+        const teammateColors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
+        const currentMember = window.firebaseIntegration && window.firebaseIntegration.getCurrentMember();
+        const currentMemberId = currentMember ? currentMember.id : null;
+
+        this.state.members.forEach((member, index) => {
+            // Skip current user (they have the main marker)
+            if (member.id === currentMemberId) return;
+
+            // Calculate member's progress (simplified - using streak as proxy)
+            const memberStreak = this.getMemberStreak(member.id);
+            const memberDay = Math.min(memberStreak, this.state.currentDay);
+            const position = this.calculateTrailPosition(memberDay, this.state.goalDays);
+            const checkedInToday = this.isMemberCheckedInToday(member.id);
+            const color = teammateColors[index % teammateColors.length];
+
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            marker.setAttribute('class', 'team-marker-small');
+            marker.setAttribute('transform', `translate(${position.x}, ${position.y})`);
+            marker.setAttribute('data-teammate-id', member.id);
+
+            const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('r', '10');
+            dot.setAttribute('fill', color);
+            dot.setAttribute('stroke', checkedInToday ? '#10b981' : 'white');
+            dot.setAttribute('stroke-width', checkedInToday ? '3' : '2');
+            dot.setAttribute('class', `team-marker-dot ${checkedInToday ? 'checked-in' : ''}`);
+
+            const emoji = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            emoji.setAttribute('text-anchor', 'middle');
+            emoji.setAttribute('dy', '0.35em');
+            emoji.setAttribute('font-size', '12');
+            emoji.textContent = member.emoji;
+
+            marker.appendChild(dot);
+            marker.appendChild(emoji);
+            svg.appendChild(marker);
+        });
+    }
+
+    updateProgressNarrative() {
+        if (!this.progressNarrativeEl) return;
+
+        const day = this.state.currentDay;
+        const goalDays = this.state.goalDays;
+        const percentage = (day / goalDays) * 100;
+
+        let narrative = '';
+
+        if (day === 0) {
+            narrative = "🥾 Your expedition begins! Take your first step today.";
+        } else if (day <= 7) {
+            narrative = `You've climbed ${day} days together — Base Camp is behind you.`;
+        } else if (percentage < 25) {
+            narrative = "Approaching Quarter Summit — consistency matters now.";
+        } else if (percentage < 50) {
+            narrative = "The trail steepens ahead — your team's momentum is building.";
+        } else if (percentage < 75) {
+            narrative = "Halfway Peak conquered! The summit is within sight.";
+        } else if (percentage < 100) {
+            narrative = "Final ascent — every step counts toward the summit.";
+        } else {
+            narrative = "🏔️ Summit reached! You've completed the expedition together.";
+        }
+
+        this.progressNarrativeEl.textContent = narrative;
+    }
+
+    setupTrailInteractions() {
+        // Expand/collapse button
+        if (this.expandTrailBtnEl) {
+            this.expandTrailBtnEl.addEventListener('click', () => this.toggleTrailExpansion());
+        }
+
+        // Team toggle
+        if (this.teamToggleEl) {
+            this.teamToggleEl.addEventListener('click', () => this.toggleTeamMarkers());
+            this.teamToggleEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.toggleTeamMarkers();
+                }
+            });
+        }
+    }
+
+    toggleTrailExpansion() {
+        if (!this.mountainTrailContainerEl) return;
+
+        this.trailState.isExpanded = !this.trailState.isExpanded;
+        this.mountainTrailContainerEl.classList.toggle('expanded', this.trailState.isExpanded);
+
+        if (this.expandTrailBtnEl) {
+            this.expandTrailBtnEl.textContent = this.trailState.isExpanded
+                ? 'Collapse Journey'
+                : 'Explore Full Journey';
+            this.expandTrailBtnEl.setAttribute('aria-expanded', this.trailState.isExpanded);
+        }
+    }
+
+    toggleTeamMarkers() {
+        this.trailState.showTeammates = !this.trailState.showTeammates;
+
+        const markers = document.querySelectorAll('.team-marker-small');
+        markers.forEach(marker => {
+            marker.classList.toggle('visible', this.trailState.showTeammates);
+        });
+
+        if (this.teamLegendEl) {
+            this.teamLegendEl.classList.toggle('visible', this.trailState.showTeammates);
+            this.teamLegendEl.setAttribute('aria-hidden', !this.trailState.showTeammates);
+
+            if (this.trailState.showTeammates) {
+                this.renderTeamLegend();
+            }
+        }
+
+        if (this.teamToggleEl) {
+            this.teamToggleEl.classList.toggle('active', this.trailState.showTeammates);
+            this.teamToggleEl.setAttribute('aria-pressed', this.trailState.showTeammates);
+        }
+    }
+
+    renderTeamLegend() {
+        if (!this.teamLegendEl) return;
+
+        const teammateColors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
+        const currentMember = window.firebaseIntegration && window.firebaseIntegration.getCurrentMember();
+        const currentMemberId = currentMember ? currentMember.id : null;
+
+        let legendHTML = '';
+
+        this.state.members.forEach((member, index) => {
+            if (member.id === currentMemberId) return;
+
+            const checkedInToday = this.isMemberCheckedInToday(member.id);
+            const color = teammateColors[index % teammateColors.length];
+            const status = checkedInToday ? '✅ Anchored' : '⏳ Climbing';
+
+            legendHTML += `
+                <div class="team-legend-item">
+                    <div class="team-legend-dot ${checkedInToday ? 'checked-in' : ''}" 
+                         style="background-color: ${color}"></div>
+                    <span class="team-legend-name">${member.emoji} ${member.name}</span>
+                    <span class="team-legend-status">${status}</span>
+                </div>
+            `;
+        });
+
+        this.teamLegendEl.innerHTML = legendHTML;
+    }
+
+    animateCheckinOnTrail() {
+        if (this.trailState.prefersReducedMotion) {
+            this.renderMountainTrail();
+            return;
+        }
+
+        const userMarker = document.getElementById('userTrailMarker');
+        if (!userMarker) return;
+
+        const newPosition = this.calculateTrailPosition(this.state.currentDay, this.state.goalDays);
+
+        userMarker.style.transition = 'transform 0.5s ease-out';
+        userMarker.setAttribute('transform', `translate(${newPosition.x}, ${newPosition.y})`);
+
+        // Update progress stroke
+        setTimeout(() => {
+            this.updateProgressStroke();
+            this.updateProgressNarrative();
+        }, 500);
+
+        // Check for milestone celebration
+        const percentage = (this.state.currentDay / this.state.goalDays) * 100;
+        if (percentage === 25 || percentage === 50 || percentage === 75 || percentage === 100) {
+            this.triggerMilestoneCelebration();
+        }
+    }
+
+    triggerMilestoneCelebration() {
+        if (this.trailState.prefersReducedMotion || this.trailState.isLowEndDevice) return;
+
+        // Simple confetti effect
+        const container = document.createElement('div');
+        container.className = 'confetti-container';
+        this.mountainTrailContainerEl.appendChild(container);
+
+        const colors = ['#fbbf24', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+
+        for (let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'confetti-particle';
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 30}%`;
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.animationDelay = `${Math.random() * 0.5}s`;
+
+            setTimeout(() => {
+                particle.classList.add('active');
+            }, 100);
+
+            container.appendChild(particle);
+        }
+
+        // Clean up after animation
+        setTimeout(() => {
+            container.remove();
+        }, 3000);
+    }
+
     renderUserSelect() {
         this.userSelectEl.innerHTML = '<option value="">Choose climber...</option>';
 
@@ -579,6 +1129,7 @@ class HabitTrackerApp {
     renderAdminPanel() {
         this.groupNameEl.value = this.state.groupName;
         this.prizeNameEl.value = this.state.summitPrize;
+
 
         // Set goal weeks (convert days to weeks)
         const currentWeeks = Math.round(this.state.goalDays / 7);
