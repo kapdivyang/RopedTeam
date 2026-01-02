@@ -1,0 +1,308 @@
+/* ========================================
+   TIME PATTERNS STYLING
+   ======================================== */
+
+/* Badge Time Display */
+.badge-time {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gold);
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.first-anchor-badge.is-me .badge-time {
+    color: var(--color-success);
+}
+
+.badge-context {
+    font-size: 0.9rem;
+    color: var(--color-ice);
+    font-weight: 500;
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+/* Timeline Time Display */
+.timeline-time {
+    font-size: 0.875rem;
+    color: var(--color-ice);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.timeline-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+/* Personal Time Patterns Section */
+.personal-time-patterns {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.personal-time-patterns h3 {
+    font-family: var(--font-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--color-gold);
+}
+
+.time-patterns-subtitle {
+    color: var(--color-ice);
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+}
+
+.time-patterns-empty {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--color-ice);
+    opacity: 0.7;
+}
+
+/* Time Stats Grid */
+.time-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.time-stat-card {
+    background: var(--gradient-card);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    transition: all var(--transition-normal);
+}
+
+.time-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.time-stat-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+}
+
+.time-stat-content {
+    flex: 1;
+}
+
+.time-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-ice);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.time-stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-family: var(--font-primary);
+    color: var(--color-gold);
+}
+
+.time-stat-value-small {
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: var(--font-primary);
+    color: var(--color-gold);
+}
+
+.time-stat-day {
+    font-size: 0.7rem;
+    color: var(--color-ice);
+    opacity: 0.7;
+    margin-top: 0.25rem;
+}
+
+/* Time Distribution */
+.time-distribution {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.time-distribution h4 {
+    font-family: var(--font-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-ice);
+}
+
+.distribution-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.distribution-item {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.distribution-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-ice);
+}
+
+.distribution-bar-container {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-sm);
+    height: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.distribution-bar {
+    height: 100%;
+    background: var(--gradient-success);
+    border-radius: var(--radius-sm);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.distribution-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: var(--font-primary);
+    color: var(--color-gold);
+    text-align: right;
+}
+
+/* Time Insights */
+.time-insights {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    border: 1px solid rgba(74, 144, 226, 0.2);
+}
+
+.time-insights h4 {
+    font-family: var(--font-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-gold);
+}
+
+.insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.insight-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.9rem;
+    color: var(--color-ice);
+    line-height: 1.5;
+    border-left: 3px solid var(--color-success);
+}
+
+/* ========================================
+   RESPONSIVE DESIGN FOR TIME PATTERNS
+   ======================================== */
+@media (max-width: 768px) {
+    .badge-time {
+        font-size: 1.125rem;
+    }
+
+    .badge-context {
+        font-size: 0.8rem;
+    }
+
+    .timeline-item {
+        grid-template-columns: auto 1fr;
+        gap: var(--spacing-xs);
+    }
+
+    .timeline-time {
+        grid-column: 1 / -1;
+        font-size: 0.75rem;
+        padding-left: 1rem;
+    }
+
+    .timeline-badge {
+        grid-column: 1 / -1;
+    }
+
+    .time-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .time-stat-card {
+        padding: var(--spacing-sm);
+    }
+
+    .time-stat-icon {
+        font-size: 2rem;
+    }
+
+    .time-stat-value {
+        font-size: 1.25rem;
+    }
+
+    .distribution-item {
+        grid-template-columns: 100px 1fr 50px;
+        gap: var(--spacing-xs);
+    }
+
+    .distribution-label {
+        font-size: 0.75rem;
+    }
+
+    .distribution-bar-container {
+        height: 20px;
+    }
+
+    .distribution-value {
+        font-size: 0.75rem;
+    }
+
+    .insight-item {
+        font-size: 0.85rem;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .personal-time-patterns {
+        padding: var(--spacing-md);
+    }
+
+    .personal-time-patterns h3 {
+        font-size: 1.25rem;
+    }
+
+    .time-distribution h4,
+    .time-insights h4 {
+        font-size: 1rem;
+    }
+}

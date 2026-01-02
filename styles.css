@@ -820,6 +820,55 @@ body {
     color: var(--color-ice);
 }
 
+/* Major Milestones (25%, 50%, 75%, 100%) */
+.milestone-marker.major-milestone {
+    grid-column: span 2;
+    aspect-ratio: 2/1;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%);
+    border: 3px solid var(--color-gold);
+    border-radius: var(--radius-xl);
+}
+
+.milestone-marker.major-milestone:not(.achieved) {
+    animation: pulseMajor 3s ease-in-out infinite;
+}
+
+@keyframes pulseMajor {
+
+    0%,
+    100% {
+        border-color: var(--color-gold);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+
+    50% {
+        border-color: rgba(255, 215, 0, 0.7);
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+    }
+}
+
+.milestone-marker.major-milestone.achieved {
+    background: var(--gradient-gold);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+    animation: majorAchieved 0.8s ease-out;
+}
+
+@keyframes majorAchieved {
+    0% {
+        transform: scale(0.7) rotate(-5deg);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.15) rotate(2deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
 /* ========================================
    CHECK-IN PANEL
    ======================================== */

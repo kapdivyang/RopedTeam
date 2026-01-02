@@ -23,6 +23,11 @@ class FirebaseIntegration {
                 this.currentUser = user;
                 await this.loadUserData();
 
+                // Show user info and logout button
+                if (window.ropedTeamApp) {
+                    window.ropedTeamApp.showUserInfo(user);
+                }
+
                 // If user doesn't have a team, try to find one by their email
                 if (!this.currentTeamId) {
                     await this.checkUserTeamAssignment();
@@ -131,6 +136,11 @@ class FirebaseIntegration {
         // Update members
         if (this.currentTeam.members) {
             app.state.members = this.currentTeam.members;
+        }
+
+        // Update major milestones if they exist
+        if (this.currentTeam.majorMilestones) {
+            app.state.majorMilestones = this.currentTeam.majorMilestones;
         }
 
         // Re-render UI

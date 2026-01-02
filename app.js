@@ -23,7 +23,13 @@ class HabitTrackerApp {
             checkins: {}, // { day: { memberId: true/false } }
             checkinDetails: {}, // { day: [{ memberId, memberName, timestamp }] } - for first anchor tracking
             baseCamps: [], // Array of week numbers that achieved perfect completion
-            weeklyProgress: {} // { week: { memberId: [days completed] } }
+            weeklyProgress: {}, // { week: { memberId: [days completed] } }
+            majorMilestones: {
+                milestone25: { name: 'Quarter Summit', reward: 'Team Lunch', achieved: false },
+                milestone50: { name: 'Halfway Peak', reward: 'Movie Night', achieved: false },
+                milestone75: { name: 'Final Ascent', reward: 'Adventure Day', achieved: false },
+                milestone100: { name: 'SUMMIT!', reward: 'Grand Celebration', achieved: false }
+            }
         };
 
         this.loadState();
@@ -113,6 +119,9 @@ class HabitTrackerApp {
         // First Anchor Elements
         this.firstAnchorBadgeEl = document.getElementById('firstAnchorBadge');
         this.firstAnchorsListEl = document.getElementById('firstAnchorsList');
+
+        // Time Patterns
+        this.personalTimePatternsEl = document.getElementById('personalTimePatterns');
     }
 
     attachEventListeners() {
@@ -143,6 +152,12 @@ class HabitTrackerApp {
         // Quick Check-in
         if (this.quickCheckinBtnEl) {
             this.quickCheckinBtnEl.addEventListener('click', () => this.handleQuickCheckin());
+        }
+
+        // Team Size Update
+        const updateTeamSizeBtn = document.getElementById('updateTeamSizeBtn');
+        if (updateTeamSizeBtn) {
+            updateTeamSizeBtn.addEventListener('click', () => this.updateTeamSize());
         }
     }
 
@@ -370,7 +385,7 @@ class HabitTrackerApp {
 
         // Today's Check-ins
         const todayCheckins = this.getTodayCheckins();
-        this.todayCheckinsEl.textContent = `${todayCheckins}/8`;
+        this.todayCheckinsEl.textContent = `${todayCheckins}/${this.state.members.length}`;
     }
 
     renderTeamProgressOverview() {
@@ -488,16 +503,53 @@ class HabitTrackerApp {
 
         const totalWeeks = Math.ceil(this.state.goalDays / 7);
 
+        // Calculate major milestone weeks (25%, 50%, 75%, 100%)
+        const milestone25Week = Math.round(totalWeeks * 0.25);
+        const milestone50Week = Math.round(totalWeeks * 0.50);
+        const milestone75Week = Math.round(totalWeeks * 0.75);
+        const milestone100Week = totalWeeks;
+
         for (let week = 1; week <= totalWeeks; week++) {
             const achieved = this.state.baseCamps.includes(week);
 
-            const marker = document.createElement('div');
-            marker.className = `milestone-marker ${achieved ? 'achieved' : ''}`;
+            // Check if this is a major milestone week
+            let isMajor = false;
+            let milestoneLabel = '';
+            let milestoneIcon = '🏔️';
 
-            marker.innerHTML = `
-                <div class="milestone-icon">${achieved ? '⛺' : '🏔️'}</div>
-                <div class="milestone-label">Week ${week}</div>
-            `;
+            if (week === milestone25Week) {
+                isMajor = true;
+                milestoneLabel = '25% - Quarter Summit';
+                milestoneIcon = achieved ? '🏔️' : '⛰️';
+            } else if (week === milestone50Week) {
+                isMajor = true;
+                milestoneLabel = '50% - Halfway Peak';
+                milestoneIcon = achieved ? '⛰️' : '🗻';
+            } else if (week === milestone75Week) {
+                isMajor = true;
+                milestoneLabel = '75% - Final Ascent';
+                milestoneIcon = achieved ? '🎯' : '🎪';
+            } else if (week === milestone100Week) {
+                isMajor = true;
+                milestoneLabel = '100% - SUMMIT!';
+                milestoneIcon = achieved ? '🏆' : '👑';
+            }
+
+            const marker = document.createElement('div');
+            marker.className = `milestone-marker ${achieved ? 'achieved' : ''} ${isMajor ? 'major-milestone' : ''}`;
+
+            if (isMajor) {
+                marker.innerHTML = `
+                    <div class="milestone-icon" style="font-size: 2.5rem;">${milestoneIcon}</div>
+                    <div class="milestone-label" style="font-weight: 700;">${milestoneLabel}</div>
+                    <div class="milestone-week" style="font-size: 0.75rem; opacity: 0.8;">Week ${week}</div>
+                `;
+            } else {
+                marker.innerHTML = `
+                    <div class="milestone-icon">${achieved ? '⛺' : '🏔️'}</div>
+                    <div class="milestone-label">Week ${week}</div>
+                `;
+            }
 
             this.milestonesGridEl.appendChild(marker);
         }
@@ -506,25 +558,73 @@ class HabitTrackerApp {
     renderUserSelect() {
         this.userSelectEl.innerHTML = '<option value="">Choose climber...</option>';
 
+        // Get current member if logged in
+        const currentMember = window.firebaseIntegration && window.firebaseIntegration.getCurrentMember();
+
         this.state.members.forEach(member => {
             const option = document.createElement('option');
             option.value = member.id;
             option.textContent = `${member.emoji} ${member.name}`;
             this.userSelectEl.appendChild(option);
         });
+
+        // Auto-select current user if they're linked to a member
+        if (currentMember) {
+            this.userSelectEl.value = currentMember.id;
+            // Trigger the selection to show personal progress
+            this.handleUserSelection();
+        }
     }
 
     renderAdminPanel() {
         this.groupNameEl.value = this.state.groupName;
         this.prizeNameEl.value = this.state.summitPrize;
 
+        // Set goal weeks (convert days to weeks)
+        const currentWeeks = Math.round(this.state.goalDays / 7);
+        const goalWeeksEl = document.getElementById('goalWeeks');
+        if (goalWeeksEl) {
+            goalWeeksEl.value = currentWeeks;
+        }
+
+        // Set team size
+        const teamSizeEl = document.getElementById('teamSize');
+        const currentTeamSizeEl = document.getElementById('currentTeamSize');
+        if (teamSizeEl) {
+            teamSizeEl.value = this.state.members.length;
+        }
+        if (currentTeamSizeEl) {
+            currentTeamSizeEl.textContent = this.state.members.length;
+        }
+
+        // Set milestone rewards
+        if (this.state.majorMilestones) {
+            const reward25El = document.getElementById('reward25');
+            const reward50El = document.getElementById('reward50');
+            const reward75El = document.getElementById('reward75');
+            const reward100El = document.getElementById('reward100');
+
+            if (reward25El) reward25El.value = this.state.majorMilestones.milestone25.reward;
+            if (reward50El) reward50El.value = this.state.majorMilestones.milestone50.reward;
+            if (reward75El) reward75El.value = this.state.majorMilestones.milestone75.reward;
+            if (reward100El) reward100El.value = this.state.majorMilestones.milestone100.reward;
+        }
+
         this.membersListEl.innerHTML = '';
 
+
         this.state.members.forEach((member, index) => {
+            const status = this.getMemberStatus(member);
+            const statusIcon = status.linked ? '✅' : (status.email ? '⏳' : '➕');
+            const statusText = status.linked ? 'Linked' : (status.email ? 'Pending' : 'Add email');
+
             const group = document.createElement('div');
             group.className = 'member-input-group';
 
             group.innerHTML = `
+                <div class="member-status-indicator" title="${statusText}" style="font-size: 1.2em; padding: 0.5rem; min-width: 2rem; text-align: center;">
+                    ${statusIcon}
+                </div>
                 <input type="text" 
                        placeholder="Name" 
                        value="${member.name}" 
@@ -536,7 +636,7 @@ class HabitTrackerApp {
                        data-index="${index}" 
                        data-field="habit">
                 <input type="email" 
-                       placeholder="Email Address" 
+                       placeholder="Email (for linking)" 
                        value="${member.email || ''}" 
                        data-index="${index}" 
                        data-field="email">
@@ -544,6 +644,13 @@ class HabitTrackerApp {
 
             this.membersListEl.appendChild(group);
         });
+    }
+
+    getMemberStatus(member) {
+        return {
+            linked: !!member.userId,
+            email: !!member.email
+        };
     }
 
     // ========================================
@@ -656,7 +763,7 @@ class HabitTrackerApp {
         const weekStart = (currentWeek - 1) * 7 + 1;
         const weekEnd = Math.min(currentWeek * 7, this.state.currentDay);
 
-        // Check if all 8 members checked in for all days of this week
+        // Check if all members checked in for all days of this week
         let weekComplete = true;
 
         for (let day = weekStart; day <= weekEnd; day++) {
@@ -666,7 +773,7 @@ class HabitTrackerApp {
             }
 
             const dayCheckins = Object.keys(this.state.checkins[day]).length;
-            if (dayCheckins < 8) {
+            if (dayCheckins < this.state.members.length) {
                 weekComplete = false;
                 break;
             }
@@ -676,6 +783,64 @@ class HabitTrackerApp {
         if (weekComplete && (this.state.currentDay % 7 === 0) && !this.state.baseCamps.includes(currentWeek)) {
             this.state.baseCamps.push(currentWeek);
             this.showCelebration(currentWeek);
+
+            // Check if this week is a major milestone
+            this.checkMajorMilestones(currentWeek);
+        }
+    }
+
+    checkMajorMilestones(week) {
+        if (!this.state.majorMilestones) return;
+
+        const totalWeeks = Math.ceil(this.state.goalDays / 7);
+        const milestone25Week = Math.round(totalWeeks * 0.25);
+        const milestone50Week = Math.round(totalWeeks * 0.50);
+        const milestone75Week = Math.round(totalWeeks * 0.75);
+        const milestone100Week = totalWeeks;
+
+        let milestoneKey = null;
+        let milestoneName = '';
+        let reward = '';
+
+        if (week === milestone25Week && !this.state.majorMilestones.milestone25.achieved) {
+            milestoneKey = 'milestone25';
+            milestoneName = 'Quarter Summit (25%)';
+            reward = this.state.majorMilestones.milestone25.reward;
+        } else if (week === milestone50Week && !this.state.majorMilestones.milestone50.achieved) {
+            milestoneKey = 'milestone50';
+            milestoneName = 'Halfway Peak (50%)';
+            reward = this.state.majorMilestones.milestone50.reward;
+        } else if (week === milestone75Week && !this.state.majorMilestones.milestone75.achieved) {
+            milestoneKey = 'milestone75';
+            milestoneName = 'Final Ascent (75%)';
+            reward = this.state.majorMilestones.milestone75.reward;
+        } else if (week === milestone100Week && !this.state.majorMilestones.milestone100.achieved) {
+            milestoneKey = 'milestone100';
+            milestoneName = 'SUMMIT REACHED! (100%)';
+            reward = this.state.majorMilestones.milestone100.reward;
+        }
+
+        if (milestoneKey) {
+            this.state.majorMilestones[milestoneKey].achieved = true;
+            this.showMajorMilestoneCelebration(milestoneName, reward);
+            this.saveState();
+        }
+    }
+
+    showMajorMilestoneCelebration(milestoneName, reward) {
+        this.celebrationTitleEl.textContent = `🏔️ ${milestoneName}`;
+        this.celebrationMessageEl.innerHTML = `
+            <p style="font-size: 1.2em; margin-bottom: 1rem;">Major Milestone Achieved!</p>
+            <p style="font-size: 1.5em; color: var(--color-gold);">🎉 ${reward} 🎉</p>
+            <p style="margin-top: 1rem; opacity: 0.9;">Keep up the amazing work!</p>
+        `;
+        this.celebrationModalEl.classList.add('active');
+
+        // Save to Firebase
+        if (window.firebaseIntegration && window.firebaseIntegration.currentTeamId) {
+            window.firebaseIntegration.updateTeamSettings({
+                majorMilestones: this.state.majorMilestones
+            });
         }
     }
 
@@ -721,7 +886,7 @@ class HabitTrackerApp {
         for (let day = this.state.currentDay; day >= 1; day--) {
             const dayCheckins = this.state.checkins[day];
 
-            if (dayCheckins && Object.keys(dayCheckins).length === 8) {
+            if (dayCheckins && Object.keys(dayCheckins).length === this.state.members.length) {
                 streak++;
             } else {
                 break;
@@ -756,8 +921,194 @@ class HabitTrackerApp {
         this.personalBestStreakEl.textContent = bestStreak;
         this.personalCompletionRateEl.textContent = `${completionRate}%`;
 
+        // Render time patterns
+        this.renderTimePatterns(memberId);
+
         // Render calendar
         this.renderPersonalCalendar(memberId);
+    }
+
+    renderTimePatterns(memberId) {
+        if (!this.personalTimePatternsEl) return;
+
+        // Get member's check-ins with timestamps
+        const memberCheckins = [];
+        if (this.state.checkinDetails) {
+            Object.values(this.state.checkinDetails).forEach(dayCheckins => {
+                const userCheckin = dayCheckins.find(c => c.memberId === memberId);
+                if (userCheckin && userCheckin.timestamp) {
+                    memberCheckins.push(userCheckin);
+                }
+            });
+        }
+
+        if (memberCheckins.length === 0) {
+            this.personalTimePatternsEl.innerHTML = `
+                <div class="time-patterns-empty">
+                    <p>⏰ No time data available yet. Complete more check-ins to see your patterns!</p>
+                </div>
+            `;
+            return;
+        }
+
+        const timeStats = this.calculateTimeStats(memberCheckins);
+        if (!timeStats) return;
+
+        // Calculate percentages for distribution
+        const total = timeStats.total;
+        const earlyPct = Math.round((timeStats.distribution.early / total) * 100);
+        const morningPct = Math.round((timeStats.distribution.morning / total) * 100);
+        const middayPct = Math.round((timeStats.distribution.midday / total) * 100);
+        const afternoonPct = Math.round((timeStats.distribution.afternoon / total) * 100);
+
+        // Determine most common time
+        const maxDist = Math.max(
+            timeStats.distribution.early,
+            timeStats.distribution.morning,
+            timeStats.distribution.midday,
+            timeStats.distribution.afternoon
+        );
+        let mostCommon = '';
+        if (timeStats.distribution.early === maxDist) mostCommon = '5-7 AM (Early Bird 🌅)';
+        else if (timeStats.distribution.morning === maxDist) mostCommon = '7-9 AM (Morning Person 🌄)';
+        else if (timeStats.distribution.midday === maxDist) mostCommon = '9-12 PM (Mid-Morning ☀️)';
+        else mostCommon = '12+ PM (Afternoon 🌤️)';
+
+        this.personalTimePatternsEl.innerHTML = `
+            <h3>⏰ Check-in Time Patterns</h3>
+            <p class="time-patterns-subtitle">Understanding your behavior helps build better habits</p>
+            
+            <div class="time-stats-grid">
+                <div class="time-stat-card">
+                    <div class="time-stat-icon">📊</div>
+                    <div class="time-stat-content">
+                        <div class="time-stat-label">Average Time</div>
+                        <div class="time-stat-value">${timeStats.average}</div>
+                    </div>
+                </div>
+                
+                <div class="time-stat-card">
+                    <div class="time-stat-icon">🌅</div>
+                    <div class="time-stat-content">
+                        <div class="time-stat-label">Earliest</div>
+                        <div class="time-stat-value">${timeStats.earliest.time}</div>
+                        <div class="time-stat-day">Day ${timeStats.earliest.day}</div>
+                    </div>
+                </div>
+                
+                <div class="time-stat-card">
+                    <div class="time-stat-icon">🌆</div>
+                    <div class="time-stat-content">
+                        <div class="time-stat-label">Latest</div>
+                        <div class="time-stat-value">${timeStats.latest.time}</div>
+                        <div class="time-stat-day">Day ${timeStats.latest.day}</div>
+                    </div>
+                </div>
+                
+                <div class="time-stat-card">
+                    <div class="time-stat-icon">⭐</div>
+                    <div class="time-stat-content">
+                        <div class="time-stat-label">Most Common</div>
+                        <div class="time-stat-value-small">${mostCommon}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="time-distribution">
+                <h4>Time Distribution</h4>
+                <div class="distribution-bars">
+                    <div class="distribution-item">
+                        <div class="distribution-label">🌅 5-7 AM</div>
+                        <div class="distribution-bar-container">
+                            <div class="distribution-bar" style="width: ${earlyPct}%"></div>
+                        </div>
+                        <div class="distribution-value">${earlyPct}%</div>
+                    </div>
+                    
+                    <div class="distribution-item">
+                        <div class="distribution-label">🌄 7-9 AM</div>
+                        <div class="distribution-bar-container">
+                            <div class="distribution-bar" style="width: ${morningPct}%"></div>
+                        </div>
+                        <div class="distribution-value">${morningPct}%</div>
+                    </div>
+                    
+                    <div class="distribution-item">
+                        <div class="distribution-label">☀️ 9-12 PM</div>
+                        <div class="distribution-bar-container">
+                            <div class="distribution-bar" style="width: ${middayPct}%"></div>
+                        </div>
+                        <div class="distribution-value">${middayPct}%</div>
+                    </div>
+                    
+                    <div class="distribution-item">
+                        <div class="distribution-label">🌤️ 12+ PM</div>
+                        <div class="distribution-bar-container">
+                            <div class="distribution-bar" style="width: ${afternoonPct}%"></div>
+                        </div>
+                        <div class="distribution-value">${afternoonPct}%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="time-insights">
+                <h4>💡 Insights</h4>
+                <div class="insights-list">
+                    ${this.generateTimeInsights(timeStats, memberCheckins)}
+                </div>
+            </div>
+        `;
+    }
+
+    generateTimeInsights(timeStats, memberCheckins) {
+        const insights = [];
+
+        // Consistency insight
+        const times = memberCheckins.map(c => {
+            const date = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp);
+            return date.getHours() * 60 + date.getMinutes();
+        });
+        const variance = this.calculateVariance(times);
+
+        if (variance < 30) {
+            insights.push('<div class="insight-item">✅ You\'re very consistent with your check-in times! This helps build strong habits.</div>');
+        } else if (variance > 120) {
+            insights.push('<div class="insight-item">💡 Your check-in times vary quite a bit. Try setting a consistent time for better habit formation.</div>');
+        }
+
+        // Early bird insight
+        if (timeStats.distribution.early > timeStats.total * 0.5) {
+            insights.push('<div class="insight-item">🌅 You\'re an early bird! Morning check-ins are linked to better consistency.</div>');
+        }
+
+        // Most productive time
+        const maxDist = Math.max(
+            timeStats.distribution.early,
+            timeStats.distribution.morning,
+            timeStats.distribution.midday,
+            timeStats.distribution.afternoon
+        );
+
+        if (timeStats.distribution.morning === maxDist && timeStats.distribution.morning > 3) {
+            insights.push('<div class="insight-item">🌄 7-9 AM seems to be your sweet spot! This is a great time for habit building.</div>');
+        }
+
+        // Improvement suggestion
+        if (memberCheckins.length >= 5) {
+            const avgMinutes = times.reduce((a, b) => a + b, 0) / times.length;
+            const avgHour = Math.floor(avgMinutes / 60);
+            if (avgHour >= 10) {
+                insights.push('<div class="insight-item">💪 Consider checking in earlier in the day for better momentum and consistency!</div>');
+            }
+        }
+
+        return insights.length > 0 ? insights.join('') : '<div class="insight-item">Keep checking in to unlock more insights!</div>';
+    }
+
+    calculateVariance(numbers) {
+        const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+        const squaredDiffs = numbers.map(n => Math.pow(n - mean, 2));
+        return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / numbers.length);
     }
 
     renderPersonalCalendar(memberId) {
@@ -835,6 +1186,49 @@ class HabitTrackerApp {
     // ========================================
     // ADMIN FUNCTIONS
     // ========================================
+    updateTeamSize() {
+        const teamSizeEl = document.getElementById('teamSize');
+        const newSize = parseInt(teamSizeEl.value);
+
+        if (isNaN(newSize) || newSize < 1 || newSize > 30) {
+            alert('⚠️ Team size must be between 1 and 30');
+            return;
+        }
+
+        const currentSize = this.state.members.length;
+
+        if (newSize === currentSize) {
+            alert('ℹ️ Team size is already ' + currentSize);
+            return;
+        }
+
+        if (newSize < currentSize) {
+            if (!confirm(`⚠️ This will remove ${currentSize - newSize} member(s) from the team. Continue?`)) {
+                return;
+            }
+        }
+
+        // Add or remove members
+        while (this.state.members.length < newSize) {
+            this.state.members.push({
+                id: this.state.members.length + 1,
+                name: '',
+                habit: '',
+                emoji: '🧗',
+                email: ''
+            });
+        }
+
+        while (this.state.members.length > newSize) {
+            this.state.members.pop();
+        }
+
+        // Re-render admin panel
+        this.renderAdminPanel();
+
+        alert(`✅ Team size updated to ${newSize} members. Remember to Save Settings!`);
+    }
+
     toggleAdminPanel() {
         this.adminContentEl.classList.toggle('active');
     }
@@ -843,6 +1237,33 @@ class HabitTrackerApp {
         // Update group settings
         this.state.groupName = this.groupNameEl.value;
         this.state.summitPrize = this.prizeNameEl.value;
+
+        // Update goal weeks/days
+        const goalWeeksEl = document.getElementById('goalWeeks');
+        if (goalWeeksEl) {
+            const weeks = parseInt(goalWeeksEl.value);
+
+            // Validate
+            if (isNaN(weeks) || weeks < 4 || weeks > 52) {
+                alert('⚠️ Challenge duration must be between 4 and 52 weeks');
+                return;
+            }
+
+            this.state.goalDays = weeks * 7;
+        }
+
+        // Update milestone rewards
+        const reward25El = document.getElementById('reward25');
+        const reward50El = document.getElementById('reward50');
+        const reward75El = document.getElementById('reward75');
+        const reward100El = document.getElementById('reward100');
+
+        if (reward25El && this.state.majorMilestones) {
+            this.state.majorMilestones.milestone25.reward = reward25El.value || 'Team Lunch';
+            this.state.majorMilestones.milestone50.reward = reward50El.value || 'Movie Night';
+            this.state.majorMilestones.milestone75.reward = reward75El.value || 'Adventure Day';
+            this.state.majorMilestones.milestone100.reward = reward100El.value || 'Grand Celebration';
+        }
 
         // Update members
         const inputs = this.membersListEl.querySelectorAll('input');
@@ -861,6 +1282,8 @@ class HabitTrackerApp {
                 await window.firebaseIntegration.updateTeamSettings({
                     name: this.state.groupName,
                     summitPrize: this.state.summitPrize,
+                    goalDays: this.state.goalDays,
+                    majorMilestones: this.state.majorMilestones,
                     members: this.state.members
                 });
 
@@ -902,6 +1325,121 @@ class HabitTrackerApp {
     }
 
     // ========================================
+    // TIME UTILITY FUNCTIONS
+    // ========================================
+    formatTime(timestamp) {
+        if (!timestamp) return 'N/A';
+
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        let hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 should be 12
+        const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+
+        return `${hours}:${minutesStr} ${ampm}`;
+    }
+
+    getTimeContext(memberCheckins, currentTime) {
+        if (!memberCheckins || memberCheckins.length === 0) {
+            return '';
+        }
+
+        // Calculate average time
+        const times = memberCheckins.map(c => {
+            const date = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp);
+            return date.getHours() * 60 + date.getMinutes(); // Convert to minutes
+        });
+
+        const avgMinutes = times.reduce((a, b) => a + b, 0) / times.length;
+        const currentDate = currentTime.toDate ? currentTime.toDate() : new Date(currentTime);
+        const currentMinutes = currentDate.getHours() * 60 + currentDate.getMinutes();
+
+        const diff = avgMinutes - currentMinutes;
+
+        if (Math.abs(diff) < 15) {
+            return 'Right on schedule! ⏰';
+        } else if (diff > 30) {
+            return `${Math.round(diff)} min earlier than usual! 🌅`;
+        } else if (diff < -30) {
+            return `${Math.round(Math.abs(diff))} min later than usual`;
+        }
+
+        return '';
+    }
+
+    calculateTimeStats(memberCheckins) {
+        if (!memberCheckins || memberCheckins.length === 0) {
+            return null;
+        }
+
+        const times = memberCheckins.map(c => {
+            const date = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp);
+            return {
+                minutes: date.getHours() * 60 + date.getMinutes(),
+                timestamp: c.timestamp,
+                day: c.day
+            };
+        });
+
+        // Calculate average
+        const avgMinutes = times.reduce((a, b) => a + b.minutes, 0) / times.length;
+        const avgHours = Math.floor(avgMinutes / 60);
+        const avgMins = Math.round(avgMinutes % 60);
+        const avgAmpm = avgHours >= 12 ? 'PM' : 'AM';
+        const avgHours12 = avgHours % 12 || 12;
+
+        // Find earliest and latest
+        const sorted = [...times].sort((a, b) => a.minutes - b.minutes);
+        const earliest = sorted[0];
+        const latest = sorted[sorted.length - 1];
+
+        // Calculate time distribution
+        const distribution = {
+            early: 0,    // 5-7 AM
+            morning: 0,  // 7-9 AM
+            midday: 0,   // 9-12 PM
+            afternoon: 0 // 12+ PM
+        };
+
+        times.forEach(t => {
+            const hour = Math.floor(t.minutes / 60);
+            if (hour >= 5 && hour < 7) distribution.early++;
+            else if (hour >= 7 && hour < 9) distribution.morning++;
+            else if (hour >= 9 && hour < 12) distribution.midday++;
+            else distribution.afternoon++;
+        });
+
+        return {
+            average: `${avgHours12}:${avgMins < 10 ? '0' : ''}${avgMins} ${avgAmpm}`,
+            earliest: {
+                time: this.formatTime(earliest.timestamp),
+                day: earliest.day
+            },
+            latest: {
+                time: this.formatTime(latest.timestamp),
+                day: latest.day
+            },
+            distribution: distribution,
+            total: times.length
+        };
+    }
+
+    getTimeOfDayIcon(timestamp) {
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const hour = date.getHours();
+
+        if (hour >= 5 && hour < 7) return '🌅';
+        if (hour >= 7 && hour < 9) return '🌄';
+        if (hour >= 9 && hour < 12) return '☀️';
+        if (hour >= 12 && hour < 17) return '🌤️';
+        if (hour >= 17 && hour < 20) return '🌆';
+        return '🌙';
+    }
+
+    // ========================================
     // FIRST ANCHOR RENDERING
     // ========================================
     renderFirstAnchorBadge() {
@@ -924,6 +1462,21 @@ class HabitTrackerApp {
         const currentMember = firebaseIntegration.getCurrentMember();
         const isCurrentUser = currentMember && currentMember.id === firstAnchor.memberId;
 
+        // Get time and context
+        const timeStr = this.formatTime(firstAnchor.timestamp);
+        const timeIcon = this.getTimeOfDayIcon(firstAnchor.timestamp);
+
+        // Get time context if it's the current user
+        let timeContext = '';
+        if (isCurrentUser && this.state.checkinDetails) {
+            const userCheckins = [];
+            Object.values(this.state.checkinDetails).forEach(dayCheckins => {
+                const userCheckin = dayCheckins.find(c => c.memberId === firstAnchor.memberId);
+                if (userCheckin) userCheckins.push(userCheckin);
+            });
+            timeContext = this.getTimeContext(userCheckins, firstAnchor.timestamp);
+        }
+
         this.firstAnchorBadgeEl.style.display = 'block';
         this.firstAnchorBadgeEl.className = `first-anchor-badge ${isCurrentUser ? 'is-me' : ''}`;
 
@@ -932,6 +1485,8 @@ class HabitTrackerApp {
             <div class="badge-content">
                 <div class="badge-title">First Anchor of the Day!</div>
                 <div class="badge-name">${firstAnchor.memberName}</div>
+                <div class="badge-time">${timeIcon} ${timeStr}</div>
+                ${timeContext ? `<div class="badge-context">${timeContext}</div>` : ''}
                 <div class="badge-subtitle">${isCurrentUser ? 'That\'s you! Amazing dedication! 🎉' : 'Beat you to it today! 💪'}</div>
             </div>
             <div class="badge-decoration">
@@ -998,11 +1553,14 @@ class HabitTrackerApp {
         firstAnchors.slice(0, 10).forEach(anchor => {
             const isCurrentUser = currentMember && currentMember.id === anchor.memberId;
             const isToday = anchor.day === this.state.currentDay;
+            const timeStr = this.formatTime(anchor.timestamp);
+            const timeIcon = this.getTimeOfDayIcon(anchor.timestamp);
 
             html += `
                 <div class="timeline-item ${isCurrentUser ? 'is-me' : ''} ${isToday ? 'is-today' : ''}">
                     <div class="timeline-day">Day ${anchor.day}</div>
                     <div class="timeline-name">⚓ ${anchor.memberName}</div>
+                    <div class="timeline-time">${timeIcon} ${timeStr}</div>
                     ${isToday ? '<div class="timeline-badge">Today</div>' : ''}
                 </div>
             `;
